@@ -1,0 +1,44 @@
+.panel {
+    border-radius:5px;
+    margin: 10% 10% 10% 10%;
+}
+
+.form-panel {
+    padding:40px;
+}
+
+.settings-panel {
+    padding: 40px;
+    border-left: 1px solid #ced4da;
+}
+
+.bg-brown {
+    background-color: #8B4513!important;
+}
+
+.alert-fixed {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 1031;
+}
+
+.photo-frame {
+    border-radius:50px;
+    height: 100px;
+    width: 100px;
+}
+
+.photo-frame img {
+    height: 100%;
+}
+
+.sidenav {
+    width: 200px;
+    padding-top: 40px;
+}
+
+label {
+    font-size: 0.9em;
+    font-weight: bold;
+}
