@@ -16,6 +16,7 @@ $password = "";
 $newpwd1 = "";
 $newpwd2 = "";
 $email_noreply = "sheryl.vizcara@gmail.com";
+$book_id = "";
 $errors   = array(); 
 
 // call the register() function if register_btn is clicked
@@ -38,10 +39,27 @@ if (isset($_POST['saveprofile_btn'])) {
 	update_profile();
 }
 
-// call the sell_save() function if sell_save_btn is clicked
+// call the save_book() function if savebook_btn is clicked
 if (isset($_POST['savebook_btn'])) {
 	save_book();
 }
+
+// call the save_book() function with argument '1' if publish_btn is clicked
+if (isset($_POST['publish_btn'])) {
+	//publish_book();
+    save_book(1);
+}
+
+// call the edit_book() function if editsave_btn is clicked
+if (isset($_POST['editsave_btn'])) {
+    edit_book();
+}
+
+// call the edit_book() function with argument '1'  if editpublish_btn is clicked
+if (isset($_POST['editpublish_btn'])) {
+    edit_book(1);
+}
+
 
 // REGISTER USER
 function register(){
@@ -241,7 +259,8 @@ function chpwd(){
 function update_profile(){
     global $username, $firstname, $lastname, $location, $mobile, $shortbio, $bday, $email, $gender, $errors, $db;
     
-    $username  = $_SESSION['user']['username'];
+    //$username  = $_SESSION['user']['username'];
+    $user_id   = $_SESSION['user']['id'];
     $firstname = e($_POST['firstname']);
     $lastname  = e($_POST['lastname']);
     $location  = e($_POST['location']);
@@ -268,9 +287,9 @@ function update_profile(){
         $query = "UPDATE users SET first_name='$firstname',last_name='$lastname',email='$email' WHERE username='$username'";
         mysqli_query($db, $query);
         
-        $query = "SELECT id FROM users WHERE username='$username'";
-        $retval = mysqli_query($db, $query); 
-        $user_id = mysqli_fetch_assoc($retval)['id'];
+        //$query = "SELECT id FROM users WHERE username='$username'";
+        //$retval = mysqli_query($db, $query); 
+        //$user_id = mysqli_fetch_assoc($retval)['id'];
         
         $query = "UPDATE userinfo SET location='$location', mobile='$mobile', shortbio='$shortbio', birthdate='$bday', gender='$gender' WHERE user_id=$user_id";
         if(mysqli_query($db, $query)){
@@ -291,38 +310,217 @@ function update_profile(){
     mysqli_close($db);
 }
 
-// SAVE BOOK SELL
-function save_book(){
+// SAVE OR PUBLISH BOOK FOR SALE
+function save_book($isPublished=0){
     global $db, $errors;
     
-    $username  = $_SESSION['user']['username'];
+    // get form values
+    $seller_id  = $_SESSION['user']['id'];
     $title = e($_POST['title']);
     $author = e($_POST['author']);
     $edition = e($_POST['edition']);
-    $pubyear = e($_POST['pubyear']);
+    $pubyear = intval(e($_POST['pubyear']));
     $publisher = e($_POST['publisher']);
-    $category = e($_POST['category']);
+    $category = intval(e($_POST['category']));
     $condition = e($_POST['condition']);
     $details = e($_POST['details']);
     $price = e($_POST['price']);
     $location = e($_POST['location']);
+    $seller_photo = '';
     
-    $query = "SELECT id FROM users WHERE username='$username'";
-    $retval = mysqli_query($db, $query); 
-    $seller_id = mysqli_fetch_assoc($retval)['id'];
+    // get file input for book photo
+    if ( $_FILES['photo']['tmp_name'] != '' ) { 
+        $photo = $_FILES['photo']['name'];
+        $seller_photo = $seller_id."_".random_pwd(12).basename($photo);
+        $uploads_dir = "../content/uploads/".$seller_photo;
     
-    //$datetime = date('Y-m-d H:i:s');
+        // check if file is really an image
+        $check = getimagesize($_FILES["photo"]["tmp_name"]);
+        if($check !== false) {
+            //  check if file size of photo is within 1MB
+            if ($_FILES["photo"]["size"] > 1000000) {
+                array_push($errors, "Sorry, your file is too large.");
+            }
+        } else {
+            array_push($errors, "File is not an image.");
+        }
+    }
     
+    // perform SQL query if no errors
     if (count($errors) == 0) {
-        $query = "INSERT INTO books (seller_id, title, author, edition, year_published, publisher, category, book_condition, details, price, location, date_created) VALUES($seller_id, '$title', '$author','$edition', $pubyear, '$publisher', '$category', '$condition', '$details', $price, '$location', now())";
         
+        if ($isPublished) {
+            // perform this SQL query if publish button is clicked
+            $query = "INSERT INTO books (seller_id, title, author, edition, year_published, publisher, category, book_condition, details, price, photo, location, date_created, isPublished, date_published) VALUES($seller_id, '$title', '$author','$edition', $pubyear, '$publisher', $category, '$condition', '$details', $price, '$seller_photo', $location, now(), $isPublished, now())";
+            
+        } else {
+            // perform this SQL query if save button is clicked
+            $query = "INSERT INTO books (seller_id, title, author, edition, year_published, publisher, category, book_condition, details, price, photo, location, date_created) VALUES($seller_id, '$title', '$author','$edition', $pubyear, '$publisher', $category, '$condition', '$details', $price, '$seller_photo', $location, now())";
+        }
+        
+        // if no SQL error, return success message
         if(mysqli_query($db, $query)){
-            $_SESSION['success']  = '<div class="alert alert-success"><strong>Book saved!</strong></div>';
+            // if there is an image selected for upload, perform file upload
+            if ( $_FILES['photo']['tmp_name'] != '' ) { 
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploads_dir)) {
+  		            // no file upload error
+                } else{
+  		            array_push($errors, "Failed to upload");
+                }
+            }
+            if ($isPublished){
+                // display this message if publish button is clicked
+                $_SESSION['success']  = '<div class="alert alert-success"><strong>Book published!</strong></div>';
+            } else {
+                // display this message if save button is clicked
+                $_SESSION['success']  = '<div class="alert alert-success"><strong>Book saved!</strong></div>';
+            }
+        } else {
+            array_push($errors, mysqli_error($db));
+        }
+    }
+    //don't close SQL db connection yet as the select in sell book form will need it
+    //mysqli_close($db);
+}
+
+// LIST BOOKS FOR AD MANAGEMENT
+function list_books() {
+    global $db, $errors;
+    
+    $seller_id  = $_SESSION['user']['id'];
+    
+    $query = "SELECT * FROM books WHERE seller_id='$seller_id'";
+    $retval = mysqli_query($db, $query); 
+    
+    if (mysqli_num_rows($retval) > 0) {
+        echo "<table class='table'>";
+        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        while($row = mysqli_fetch_assoc($retval)) {
+            echo "<tr><td>".$row['book_id']."</td><td>";
+            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
+            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
+            if ($row['isPublished']){
+                echo "<span class='badge badge-success'>Published</span>";
+            } else {
+                echo "<span class='badge badge-light'>Draft</span>";
+            }
+            echo "</td><td><a class='btn btn-outline-secondary btn-sm' href='edit.php?id=".$row['book_id']."'>Edit</a>";
+            if ($row['isPublished']){
+                echo "<a class='btn btn-outline-warning btn-sm' href='manage.php?unpub=".$row['book_id']."'>Unpublish</button>";
+            } else {
+                echo "<a class='btn btn-primary btn-sm' href='manage.php?pub=".$row['book_id']."'>Publish</a>";
+            }
+            echo "</td></tr>";
+        }
+        echo "</tbody></table>";
+    } else {
+        echo "<a href='sell.php'> Sell your book. </a>";
+    }
+    mysqli_close($db);
+}
+
+// EDIT OR PUBLISH SAVED BOOK
+function edit_book($isPublished=0){
+    global $db, $errors;
+    
+    // get form values
+    $book_id  = $_SESSION['book']['book_id'];
+    $title = e($_POST['title']);
+    $author = e($_POST['author']);
+    $edition = e($_POST['edition']);
+    $pubyear = intval(e($_POST['pubyear']));
+    $publisher = e($_POST['publisher']);
+    $category = intval(e($_POST['category']));
+    $condition = e($_POST['condition']);
+    $details = e($_POST['details']);
+    $price = e($_POST['price']);
+    $location = e($_POST['location']);
+    $seller_photo = '';
+        
+    // get file input for book photo
+    if ( $_FILES['photo']['tmp_name'] != '' ) { 
+        $photo = $_FILES['photo']['name'];
+        $seller_photo = $seller_id."_".random_pwd(12).basename($photo);
+        $uploads_dir = "../content/uploads/".$seller_photo;
+    
+        // check if file is really an image
+        $check = getimagesize($_FILES["photo"]["tmp_name"]);
+        if($check !== false) {
+            //  check if file size of photo is within 1MB
+            if ($_FILES["photo"]["size"] > 1000000) {
+                array_push($errors, "Sorry, your file is too large.");
+            }
+        } else {
+            array_push($errors, "File is not an image.");
+        }
+    }
+    
+        
+    if (count($errors) == 0) {
+        if ( $isPublished ){
+            // perform this query if to UPDATE and publish
+            $query = "UPDATE books SET title='$title',author='$author', edition='$edition', year_published=$pubyear, publisher='$publisher', category=$category, book_condition='$condition', details='$details', price=$price, location=$location, date_created=now(), isPublished='$isPublished', date_published=now() WHERE book_id=$book_id";
+        } else {
+            // perform this SQL query if to UPDATE only
+            $query = "UPDATE books SET title='$title',author='$author', edition='$edition', year_published=$pubyear, publisher='$publisher', category=$category, book_condition='$condition', details='$details', price=$price, location=$location, date_created=now() WHERE book_id=$book_id";
+        }
+        
+        if( mysqli_query($db, $query) ){
+            if ( $_FILES['photo']['tmp_name'] != '' ) {
+                if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploads_dir)) {
+                    //no file upload error
+                }else{
+  		            array_push($errors, "Failed to upload");
+                }
+            }
+            if ($isPublished) {
+                // display this message if to publish 
+                $_SESSION['success']  = '<div class="alert alert-success"><strong>Book successfully published!</strong></div>';
+                exit(header('location: manage.php'));
+            } else {
+                // display this message if to UPDATE book only
+                $_SESSION['success']  = '<div class="alert alert-success"><strong>Book successfully edited!</strong></div>';
+                exit(header('location: manage.php'));
+            }
         } else {
             array_push($errors, mysqli_error($db));
         }
     }
     
+    //mysqli_close($db);
+}
+
+// DISPLAY BOOK CATALOG
+function display_catalog() {
+    global $db, $errors;
+        
+    $query = "SELECT * FROM books WHERE seller_id='$seller_id'";
+    $retval = mysqli_query($db, $query); 
+    
+    if (mysqli_num_rows($retval) > 0) {
+        echo "<table class='table'>";
+        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        while($row = mysqli_fetch_assoc($retval)) {
+            echo "<tr><td>".$row['book_id']."</td><td>";
+            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
+            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
+            if ($row['isPublished']){
+                echo "<span class='badge badge-success'>Published</span>";
+            } else {
+                echo "<span class='badge badge-light'>Draft</span>";
+            }
+            echo "</td><td><a class='btn btn-outline-secondary btn-sm' href='edit.php?id=".$row['book_id']."'>Edit</a>";
+            if ($row['isPublished']){
+                echo "<a class='btn btn-outline-warning btn-sm' href='manage.php?unpub=".$row['book_id']."'>Unpublish</button>";
+            } else {
+                echo "<a class='btn btn-primary btn-sm' href='manage.php?pub=".$row['book_id']."'>Publish</a>";
+            }
+            echo "</td></tr>";
+        }
+        echo "</tbody></table>";
+    } else {
+        echo "<a href='sell.php'> Sell your book. </a>";
+    }
     mysqli_close($db);
 }
 
@@ -351,4 +549,30 @@ function random_pwd($chars) {
   return substr(str_shuffle($pwdchars), 0, $chars);
 }
 
+// list category
+function list_category($selected=0) {
+    global $db;
+    $query = "SELECT * FROM book_category";
+    $retval = mysqli_query($db, $query);
+    while($row = mysqli_fetch_assoc($retval)) {
+        if ($selected && $selected==$row['cat_id']){
+            echo "<option selected value=".$row['cat_id'].">".$row['category']."</option>";
+        } else {
+            echo "<option value=".$row['cat_id'].">".$row['category']."</option>";
+        }
+    }
+}
 
+// list category
+function list_regions($selected=0) {
+    global $db;
+    $query = "SELECT loc_id, region FROM location";
+    $retval = mysqli_query($db, $query);
+    while($row = mysqli_fetch_assoc($retval)) {
+        if ($selected && $selected==$row['loc_id']){
+            echo "<option selected value=".$row['loc_id'].">".$row['region']."</option>";
+        }else{
+            echo "<option value=".$row['loc_id'].">".$row['region']."</option>";
+        }
+    }
+}

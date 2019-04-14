@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Apr 13, 2019 at 11:47 AM
+-- Generation Time: Apr 14, 2019 at 04:53 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.10
 
@@ -34,22 +34,38 @@ CREATE TABLE `books` (
   `edition` varchar(20) NOT NULL,
   `year_published` smallint(4) NOT NULL,
   `publisher` varchar(64) NOT NULL,
-  `category` varchar(20) NOT NULL,
+  `category` tinyint(2) NOT NULL,
   `price` decimal(10,0) NOT NULL,
   `book_condition` varchar(10) NOT NULL,
   `details` text NOT NULL,
   `photo` varchar(100) NOT NULL,
-  `location` varchar(64) NOT NULL,
+  `location` tinyint(3) NOT NULL,
   `date_created` datetime NOT NULL,
+  `isPublished` tinyint(1) NOT NULL,
   `date_published` datetime NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `books`
+-- Table structure for table `book_category`
 --
 
-INSERT INTO `books` (`book_id`, `seller_id`, `title`, `author`, `edition`, `year_published`, `publisher`, `category`, `price`, `book_condition`, `details`, `photo`, `location`, `date_created`, `date_published`) VALUES
-(1, 28, 'Pride and Prejudice', 'Jane Austen', '', 1970, '', 'Fiction', '200', 'Old', 'sdsd', '', 'Metro Manila', '2019-04-12 23:07:25', '0000-00-00 00:00:00');
+CREATE TABLE `book_category` (
+  `cat_id` int(3) NOT NULL,
+  `category` varchar(20) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `location`
+--
+
+CREATE TABLE `location` (
+  `loc_id` tinyint(3) NOT NULL,
+  `region` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -66,15 +82,7 @@ CREATE TABLE `userinfo` (
   `birthdate` date NOT NULL,
   `gender` varchar(10) NOT NULL,
   `profile_photo` text NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `userinfo`
---
-
-INSERT INTO `userinfo` (`userinfo_id`, `user_id`, `location`, `mobile`, `shortbio`, `birthdate`, `gender`, `profile_photo`) VALUES
-(1, 27, '', '', '', '0000-00-00', '', ''),
-(2, 28, 'Metro Manila', '09062038475', 'dsdsdsd', '1992-09-30', 'male', '');
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -90,25 +98,7 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `username`, `user_type`, `password`, `email`, `first_name`, `last_name`) VALUES
-(17, 'svizcara', 'user', '081299403fb28f81875b64f91b2f5db4', 'svizcara@gmail.com', 'Sheryl', 'Vizcara'),
-(18, 'sdsds', 'user', '6e3269c0fc47518b2fecefd22314e67a', 'sds@gmail.com', 'sdsds', 'sd'),
-(19, 'svizcara2', 'user', 'c91f28b7f2082faeefdd30cac4756152', 'sheryl.vizcara@gmail.com', 'Sheryl', 'Vizcara'),
-(20, 'svizcara3', 'user', 'e10551b8e7afe6f13a602f5a0d1a0a33', 'sheryl.vizcara1@gmail.com', 'Sheryl', 'Vizcara'),
-(21, 'svizcar1223', 'user', 'a51a4f22846e0a9e24aed2f2ac9d20db', 'svizcara1212@gmail.com', 'sheryl', 'vizcara'),
-(22, 'dsdsdsd', 'user', '2f1ce7c650cebcead01ec966567ac794', 'sdsdsds@dwfwf', 'sdsd', 'sd'),
-(23, 'svizcara8', 'user', 'cb391e1aea620868bdd4bbfce4e86195', 'sheryl.vizcara2@gmail.com', 'Sheryl', 'Vizcara'),
-(24, 'sheryl', 'user', 'aef8f63a92cbd02c424b5e26c2b3b24b', 'sheryl.vizcara3@gmail.com', 'sheryl', 'vizcara'),
-(25, 'sd', 'user', 'f61419e3201e5b4ba86c4a13d7b4562a', 'sdsd@gmail.com', 'sdsd', 'sds'),
-(26, 'sds', 'user', '35725a916924cff7b6b5c56421adda5a', 'sdsdsdsd@gmail.com', 'sdsd', 'sdsd'),
-(27, 'user', 'user', '894a24ea4a8850ced956e1f6d3769bbb', 'user@trial.email', 'user first', 'user last'),
-(28, 'user2', 'user', '9f767b0f38cb33d8a6a4b13319c25693', 'user2@test.email', 'user', 'user');
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Indexes for dumped tables
@@ -119,6 +109,18 @@ INSERT INTO `users` (`id`, `username`, `user_type`, `password`, `email`, `first_
 --
 ALTER TABLE `books`
   ADD PRIMARY KEY (`book_id`);
+
+--
+-- Indexes for table `book_category`
+--
+ALTER TABLE `book_category`
+  ADD PRIMARY KEY (`cat_id`);
+
+--
+-- Indexes for table `location`
+--
+ALTER TABLE `location`
+  ADD PRIMARY KEY (`loc_id`);
 
 --
 -- Indexes for table `userinfo`
@@ -142,17 +144,27 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `books`
 --
 ALTER TABLE `books`
-  MODIFY `book_id` int(10) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `book_id` int(10) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `book_category`
+--
+ALTER TABLE `book_category`
+  MODIFY `cat_id` int(3) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `location`
+--
+ALTER TABLE `location`
+  MODIFY `loc_id` tinyint(3) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `userinfo`
 --
 ALTER TABLE `userinfo`
-  MODIFY `userinfo_id` int(10) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+  MODIFY `userinfo_id` int(10) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(10) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=29;
+  MODIFY `id` int(10) NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

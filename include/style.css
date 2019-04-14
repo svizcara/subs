@@ -1,6 +1,22 @@
+body {
+/*    background-color: lightgray;*/
+}
+
+label {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.required-label {
+    font-size: 0.8em;
+    font-weight: lighter;
+    color: red;
+}
+
 .panel {
     border-radius:5px;
     margin: 10% 10% 10% 10%;
+/*    background-color: antiquewhite;*/
 }
 
 .form-panel {
@@ -38,7 +54,32 @@
     padding-top: 40px;
 }
 
-label {
-    font-size: 0.9em;
-    font-weight: bold;
+
+#photo-preview {
+    height: 200px;
+    padding: 10px;
+    border: 1px solid #fffffe;
+}
+
+.thumbnail {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    overflow: hidden;
+}
+
+.thumbnail img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 100%;
+    width: auto;
+    -webkit-transform: translate(-50%,-50%);
+        -ms-transform: translate(-50%,-50%);
+            transform: translate(-50%,-50%);
+}
+
+.thumbnail-sm {
+    width: 100px;
+    height: 100px;
 }
