@@ -16,10 +16,11 @@ if (isset($_GET['logout'])) {
 }
 if (isset($_GET['pub'])) {
   	$book_id = $_GET['pub'];
-    $query = "UPDATE books SET isPublished=1 WHERE book_id='$book_id'";
-    $_SESSION['success']  = '<div class="alert alert-success"><strong>Book successfully published!</strong></div>';
+    $query = "UPDATE books SET isPublished=1, date_published=now() WHERE book_id='$book_id'";
+    if ( mysqli_query($db, $query) ){
+        $_SESSION['success']  = '<div class="alert alert-success"><strong>Book successfully published!</strong></div>';
+    } 
 }    
-
 if (isset($_GET['unpub'])) {
   	$book_id = $_GET['unpub'];
     $query = "UPDATE books SET isPublished=0 WHERE book_id='$book_id'";

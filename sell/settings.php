@@ -37,11 +37,11 @@
                 <div class="row">
                     <div class="col-sm-6">
                         <label for="firstname">First Name</label>
-                        <input type="text" class="form-control" name="firstname" placeholder="First name" pattern="[A-Za-z]+" value="<?php echo $_SESSION['user']['first_name']; ?>" required>
+                        <input type="text" class="form-control" name="firstname" placeholder="First name" pattern="[A-Za-z ]+" value="<?php echo $_SESSION['user']['first_name']; ?>" required>
                     </div>
                     <div class="col-sm-6">
                         <label for="lastname">Last Name</label>
-                        <input type="text" class="form-control" name="lastname" placeholder="Last name" pattern="[A-Za-z]+" value="<?php echo$_SESSION['user']['last_name']; ?>" required>
+                        <input type="text" class="form-control" name="lastname" placeholder="Last name" pattern="[A-Za-z ]+" value="<?php echo$_SESSION['user']['last_name']; ?>" required>
                     </div>
                 </div>
             </div>    

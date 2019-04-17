@@ -15,7 +15,7 @@ label {
 
 .panel {
     border-radius:5px;
-    margin: 10% 10% 10% 10%;
+    margin: 5em 10% 5em 10%;
 /*    background-color: antiquewhite;*/
 }
 
@@ -82,4 +82,154 @@ label {
 .thumbnail-sm {
     width: 100px;
     height: 100px;
+}
+
+.catalog-item {
+    margin: 10px 10px 10px 10px;
+}
+
+.catalog-item a {
+    color: black;
+}
+
+.catalog-item a:hover {
+    text-decoration: none;
+}
+
+.caption {
+    display: block;
+}
+
+.book-title { font-weight: bold; }
+.book-author { 
+    font-weight: lighter; 
+    font-size: 0.8em;
+}
+.book-price {
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.view-panel {
+    padding: 2em;
+}
+
+.view-panel h2 {
+    margin-bottom: 1em;
+    text-transform: uppercase;
+    font-size: 1em;
+    color: darkslategray;
+    font-stretch: extra-expanded;
+}
+
+.view-book-container{
+    position: relative;
+    float: left;
+    height: 400px;
+    overflow: hidden;
+    background-color: black;
+    margin-bottom: 50px;
+}
+
+.view-book-container img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    height: 100%;
+    width: auto;
+    -webkit-transform: translate(-50%,-50%);
+        -ms-transform: translate(-50%,-50%);
+            transform: translate(-50%,-50%);
+}
+
+.view-book-primary-details {
+    float: left;
+    margin-bottom: 2em;
+}
+
+.view-book-secondary-details {
+}
+
+.view-book-secondary-details table {
+    margin-bottom: 2em;
+}
+
+.view-book-secondary-details td:nth-child(1){
+    width: 150px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.view-book-title{
+    font-weight: bold; 
+    font-size: 2em;
+}
+
+.view-book-author { 
+    font-weight: lighter; 
+    font-size: 1.6em;
+}
+.view-book-price {
+    font-weight: bold;
+    font-size: 1.6em;
+    margin-bottom: 30px;
+}
+
+.view-book-seller {
+    font-weight: lighter; 
+}
+
+.view-seller-location {
+    font-weight: lighter; 
+    font-size: 0.8em;
+    margin-bottom: 2em;
+}
+
+#contact-seller-container {
+    padding: 2em;
+}
+
+input[name=search-book] {
+    padding: 0.2em;
+    float: left;
+/*    width: 70%;*/
+    font-size-adjust: auto;
+    font-stretch: extra-expaextra-condensed;
+    font-weight: lighter;
+}
+
+.search-panel {
+    margin: 2em 5% 0 5%;
+}
+
+.filter-panel, .sort-panel {
+    margin: 1em 5% 0 5%;
+    padding: 0 1em 0 1em;
+}
+
+
+.filter-panel span {
+    float: left;
+    font-weight: lighter;
+    margin-top: 5px;
+}
+
+.filter-button {
+    margin: 0 5px 0 5px;
+    float: left;
+    border-radius: 0px;
+}
+
+.sort-panel span {
+    float: left;
+}
+
+.sort-panel {
+    font-weight: lighter;
+}
+
+.sort-panel select{
+    width: auto;
+    margin-left: 1em;
+    border-radius: 0px;
 }

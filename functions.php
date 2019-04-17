@@ -17,6 +17,7 @@ $newpwd1 = "";
 $newpwd2 = "";
 $email_noreply = "sheryl.vizcara@gmail.com";
 $book_id = "";
+$search = 0;
 $errors   = array(); 
 
 // call the register() function if register_btn is clicked
@@ -59,6 +60,15 @@ if (isset($_POST['editsave_btn'])) {
 if (isset($_POST['editpublish_btn'])) {
     edit_book(1);
 }
+
+
+if (isset($_GET['catid'])) {
+  	$_SESSION['filterby'] = $_GET['catid'];
+}
+
+if ( !isset($_GET['sortoption'])) {$_GET['sortoption'] = 0;}
+
+//if ( !isset($_GET['q']) ) $q='';
 
 
 // REGISTER USER
@@ -205,8 +215,8 @@ function login(){
 			if ($logged_in_user['user_type'] == 'admin') {
 				$_SESSION['user'] = $logged_in_user;
 				$_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in." </div>';
-				header('location: admin/home.php');		
-                exit;
+				exit(header('location: admin/home.php'));		
+                
 			} else{
                 $user_id = $logged_in_user['id'];
                 $query = "SELECT * FROM userinfo WHERE user_id='$user_id'";
@@ -215,7 +225,8 @@ function login(){
 				$_SESSION['user'] = $logged_in_user;
                 $_SESSION['userinfo'] = mysqli_fetch_assoc($results);
 				$_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in. </div>';
-				exit(header('location: sell/index.php'));
+				header('location: sell/index.php');
+                exit;
 			}
 		} else {
 			array_push($errors, "Wrong username or password.");
@@ -284,12 +295,9 @@ function update_profile(){
     
     if (count($errors) == 0) {
         
-        $query = "UPDATE users SET first_name='$firstname',last_name='$lastname',email='$email' WHERE username='$username'";
+        $query = "UPDATE users SET first_name='$firstname',last_name='$lastname',email='$email' WHERE id='$user_id'";
         mysqli_query($db, $query);
-        
-        //$query = "SELECT id FROM users WHERE username='$username'";
-        //$retval = mysqli_query($db, $query); 
-        //$user_id = mysqli_fetch_assoc($retval)['id'];
+    
         
         $query = "UPDATE userinfo SET location='$location', mobile='$mobile', shortbio='$shortbio', birthdate='$bday', gender='$gender' WHERE user_id=$user_id";
         if(mysqli_query($db, $query)){
@@ -393,7 +401,7 @@ function list_books() {
     $retval = mysqli_query($db, $query); 
     
     if (mysqli_num_rows($retval) > 0) {
-        echo "<table class='table'>";
+        echo "<table class='table table-hover'>";
         echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<tr><td>".$row['book_id']."</td><td>";
@@ -490,38 +498,131 @@ function edit_book($isPublished=0){
     //mysqli_close($db);
 }
 
-// DISPLAY BOOK CATALOG
-function display_catalog() {
-    global $db, $errors;
+function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
+    global $db, $errors, $q;
+    
+    if ( $sortby ){ 
+        if ( $sortby == 1 ) $sortphrase = "price ASC"; 
+        if ( $sortby == 2 ) $sortphrase = "title ASC"; 
+        if ( $sortby == 3 ) $sortphrase = "title DESC"; 
+        if ( $sortby == 4 ) $sortphrase = "author ASC"; 
+        if ( $sortby == 5 ) $sortphrase = "author DESC"; 
+    } else {
+        $sortphrase = "date_published ASC";
+    }
+    
+    if ( $filterby ){
+        $filterphrase = "AND category = $filterby";
+    } else {
+        $filterphrase = "";
+    }
+    
+    if ( $search ) {
+        $q = e($_GET['q']);    
         
-    $query = "SELECT * FROM books WHERE seller_id='$seller_id'";
-    $retval = mysqli_query($db, $query); 
+        if ( $search == 1 ) { 
+            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND (author  LIKE'%$q%' OR title LIKE '%$q%') ORDER BY $sortphrase"; 
+        }
+        if ( $search == 2 ) {
+            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND title LIKE '%$q%' ORDER BY date_published DESC"; 
+        }
+        if ( $search == 3 ) {
+            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND author  LIKE'%$q%' ORDER BY date_published DESC"; 
+        }
+    } else {
+        $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase ORDER BY $sortphrase";
+    }
+    
+    $retval = mysqli_query($db, $query);
     
     if (mysqli_num_rows($retval) > 0) {
-        echo "<table class='table'>";
-        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        echo "<div class='catalog-container'>";
         while($row = mysqli_fetch_assoc($retval)) {
-            echo "<tr><td>".$row['book_id']."</td><td>";
-            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
-            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
-            if ($row['isPublished']){
-                echo "<span class='badge badge-success'>Published</span>";
-            } else {
-                echo "<span class='badge badge-light'>Draft</span>";
-            }
-            echo "</td><td><a class='btn btn-outline-secondary btn-sm' href='edit.php?id=".$row['book_id']."'>Edit</a>";
-            if ($row['isPublished']){
-                echo "<a class='btn btn-outline-warning btn-sm' href='manage.php?unpub=".$row['book_id']."'>Unpublish</button>";
-            } else {
-                echo "<a class='btn btn-primary btn-sm' href='manage.php?pub=".$row['book_id']."'>Publish</a>";
-            }
-            echo "</td></tr>";
+            echo "<div class='catalog-item float-left'><a href='view.php?view=".$row['book_id']."'>";
+            echo "<div class='thumbnail'><img src='./content/uploads/".$row['photo']."' alt='".$row['title']."'/></div>";
+            echo "<span class='book-title'>".$row['title']."</span>";
+            echo "<span class='book-author'> | ".$row['author']."</span><hr/>";
+            echo "<span class='book-price caption'> Php ".$row['price']."</span>";
+            echo "</a></div>";
         }
-        echo "</tbody></table>";
+        echo "</div>";
     } else {
-        echo "<a href='sell.php'> Sell your book. </a>";
+        echo "No search results. ";
     }
     mysqli_close($db);
+}
+
+
+// VIEW BOOK 
+function display_book($book_id) {
+    global $db, $errors;
+    
+    $query = "SELECT * FROM books WHERE book_id=".$book_id;
+    $retval = mysqli_query($db, $query); 
+    $book = mysqli_fetch_assoc($retval);
+    
+    $query = "SELECT * FROM users JOIN userinfo ON id = user_id WHERE id=".$book['seller_id'];
+    $retval = mysqli_query($db, $query); 
+    $seller = mysqli_fetch_assoc($retval);
+    
+    $query = "SELECT * FROM book_category WHERE cat_id=".$book['category'];
+    $retval = mysqli_query($db, $query); 
+    $cat = mysqli_fetch_assoc($retval);
+    
+    //display photo large size
+    echo "<div class='view-book-container col-lg-8'><img src='./content/uploads/".$book['photo']."'/></div>";
+    echo "<div class='view-book-primary-details col-lg-4'>";
+    echo "<span class='view-book-title caption'>".$book['title']."</span>";
+    echo "<span class='view-book-author caption'> ".$book['author']."</span><hr/>";
+    echo "<span class='view-book-price caption'>Php ".$book['price']."</span>";
+    //echo "<span class='view-book-title caption'>".$book['title']"</span";
+    echo "<span class='view-book-seller caption'>Sold by ".$seller['first_name']." ".$seller['last_name']."</span>";
+    echo "<span class='view-seller-location caption'>".$seller['location']."</span>";
+    //echo "<a class='btn btn-primary btn-block'>Contact Seller</a>";
+    echo "<h2>Contact Seller</h2>";
+    echo "<div class='d-flex flex-column border' id='contact-seller-container'>";
+    echo "<a class='btn btn-primary btn-sm' href='#'>Send online message</a>"; 
+    echo "<span align='center'>OR</span>";
+    echo "<a class='btn btn-light btn-sm' href='#'>09XX-XXX-XXXX</a>";
+    echo "</div></div>";
+    
+    echo "<div class='view-book-secondary-details col-lg-8'>";
+    echo "<h2>Book Details</h2>";
+    echo "<table class='table table-sm'>";
+    if (!empty($book['edition'])){
+        echo "<tr><td>Book edition</td><td>".$book['edition']."</td></tr>";
+    } else {
+        echo "<tr><td>Book edition</td><td>No information</td></tr>";
+    }
+    if (!empty($book['year_published'])){
+        echo "<tr><td>Year published</td><td>".$book['year_published']."</td></tr>";
+    } else {
+        echo "<tr><td>Year published</td><td> No information </td></tr>";
+    }
+    if (!empty($book['publisher'])){
+        echo "<tr><td>Book publisher</td><td>".$book['publisher']."</td></tr>";
+    } else {
+        echo "<tr><td>Book publisher</td><td>No information</td></tr>";
+    }
+    if (!empty($book['details'])){
+        echo "<tr><td>Other details</td><td>".$book['details']."</td></tr>";
+    } else {
+        echo "<tr><td>Other details</td><td></td></tr>";
+    }
+    echo "</table>";
+    
+    
+    echo "<table class='table table-sm'>";
+    echo "<h2>Item Details</h2>";
+    echo "<tr><td>Category</td><td>".$cat['category']."</td></tr>";
+    echo "<tr><td>Condition</td><td>".$book['book_condition']."</td></tr>";
+    echo "<tr><td>Location</td><td>".get_location($book['location'])."</td></tr>";
+    echo "<tr><td>Date posted</td><td>".date('j M Y', strtotime($book['date_published']))."</td></tr>";
+    echo "<tr><td>Book ID</td><td>".$book['book_id']."</td></tr>";
+    echo "</table>";
+    echo "</div>";
+    
+    echo"</div>";
 }
 
 // escape string
@@ -575,4 +676,31 @@ function list_regions($selected=0) {
             echo "<option value=".$row['loc_id'].">".$row['region']."</option>";
         }
     }
+}
+
+// get location
+function get_location($loc_id) {
+    global $db;
+    
+    $query = "SELECT * FROM location WHERE loc_id=".$loc_id;
+    $retval = mysqli_query($db, $query); 
+    $loc = mysqli_fetch_assoc($retval);
+    mysqli_close($db);
+        
+    return $loc['region'];
+}
+
+// list category as filters
+function list_category_as_filters() {
+    global $db;
+    $query = "SELECT * FROM book_category";
+    $retval = mysqli_query($db, $query);
+    $page = htmlspecialchars($_SERVER['PHP_SELF']);
+//    echo "<a class='btn btn-secondary btn-sm filter-button' href='$page?catid=0'>Show all</a>";
+    echo "<button type='submit' class='btn btn-secondary btn-sm filter-button' name='catid' value=0>Show all</button>";
+    while($row = mysqli_fetch_assoc($retval)) {
+//        echo "<a class='btn btn-light btn-sm filter-button' href='$page?catid=".$row['cat_id']."'>".$row['category']."</a>";
+        echo "<button type='submit' class='btn btn-light btn-sm filter-button' name='catid' value='".$row['cat_id']."'>".$row['category']."</button>";
+    }
+//    echo "</div>";
 }

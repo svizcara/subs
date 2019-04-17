@@ -36,15 +36,15 @@
                 <label for="condition">Book condition</label>
                 <span class="required-label">(required)</span>
                 <select class="form-control" name="condition" required>
-                    <option value="as new">As New</option>
-                    <option value="f">Fine</option>
-                    <option value="vg">Very Good</option>
-                    <option value="g">Good</option>
-                    <option value="fair">Fair</option>
-                    <option value="poor">Poor</option>
-                    <option value="el">Ex-library</option>
-                    <option value="bcl">Book Club</option>
-                    <option value="bcp">Binding Copy</option>
+                    <option value="As New">As New</option>
+                    <option value="Fine">Fine</option>
+                    <option value="Very Good">Very Good</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                    <option value="Poor">Poor</option>
+                    <option value="Ex-library">Ex-library</option>
+                    <option value="Book Club">Book Club</option>
+                    <option value="Binding Copy">Binding Copy</option>
                 </select>
              </div>
              <div class="form-group">
