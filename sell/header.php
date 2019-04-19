@@ -7,12 +7,18 @@ include '../functions.php';
 //session_start(); 
 if (!isset($_SESSION['user'])) {
     $_SESSION['msg'] = '<div class="alert alert-warning">You must log in first</div>';
-    header('location: ../login.php');
+    exit(header('location: ../login.php'));
+}else {
+    if ( $_SESSION['user']['user_type'] != 'user' ) {
+        $_SESSION['msg'] = '<div class="alert alert-warning">You must log as site user to access this page</div>';
+        exit(header('location: ../login.php'));
+    }
 }
+
 if (isset($_GET['logout'])) {
   	session_destroy();
-  	unset($_SESSION['user']);
-  	header("location: ../login.php");
+  	exit(header("location: ../login.php"));
+    unset($_SESSION['user']);
 }
 if (isset($_GET['pub'])) {
   	$book_id = $_GET['pub'];
@@ -42,11 +48,11 @@ if (isset($_GET['unpub'])) {
             
             <div class="collapse navbar-collapse" id="navbarMenu">
                 <ul class="navbar-nav">
-                    <li class="nav-item"><a class="nav-link" href="#">Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.php">Messages</a></li>
                     <li class="nav-item"><a class="nav-link" href="sell.php">Sell Books</a></li>
                     <li class="nav-item"><a class="nav-link" href="manage.php">Ad management </a></li>
                     <li class="nav-item"><a class="nav-link" href="settings.php">Settings</a></li>
-                    <li class="nav-item"><a class="nav-link" href="index.php?logout='1'">Logout</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']);?>?logout='1'">Logout</a></li>
                 </ul>
             </div>
             

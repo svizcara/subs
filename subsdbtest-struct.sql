@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Apr 17, 2019 at 07:41 PM
+-- Generation Time: Apr 19, 2019 at 09:56 AM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.10
 
@@ -42,7 +42,8 @@ CREATE TABLE `books` (
   `location` tinyint(3) NOT NULL,
   `date_created` datetime NOT NULL,
   `isPublished` tinyint(1) NOT NULL,
-  `date_published` datetime NOT NULL
+  `date_published` datetime NOT NULL,
+  `bookDeactivated` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -65,6 +66,33 @@ CREATE TABLE `book_category` (
 CREATE TABLE `location` (
   `loc_id` tinyint(3) NOT NULL,
   `region` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `mbox`
+--
+
+CREATE TABLE `mbox` (
+  `id` int(10) NOT NULL,
+  `book_id` int(10) NOT NULL,
+  `sent_by` int(10) NOT NULL,
+  `sent_to` int(10) NOT NULL,
+  `message` text NOT NULL,
+  `date_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(10) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `reset_token` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -98,7 +126,8 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) NOT NULL,
-  `date_created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `date_registered` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `isDeactivated` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
@@ -122,6 +151,19 @@ ALTER TABLE `book_category`
 --
 ALTER TABLE `location`
   ADD PRIMARY KEY (`loc_id`);
+
+--
+-- Indexes for table `mbox`
+--
+ALTER TABLE `mbox`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `reset_token` (`reset_token`);
 
 --
 -- Indexes for table `userinfo`
@@ -156,6 +198,16 @@ ALTER TABLE `book_category`
 --
 ALTER TABLE `location`
   MODIFY `loc_id` tinyint(3) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `mbox`
+--
+ALTER TABLE `mbox`
+  MODIFY `id` int(10) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(10) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `userinfo`
 --

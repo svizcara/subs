@@ -1,3 +1,1 @@
-<?php include 'header.php'; ?>
-        
-<?php include('footer.php')?>
+<?php header('location: messages.php'); exit();?>

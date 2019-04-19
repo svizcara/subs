@@ -25,32 +25,43 @@ if (isset($_GET['view'])) {
                 <span class="navbar-toggler-icon"></span>
             </button>
             
-            <?php if (!isset($_SESSION['user'])) {
-                echo'
-                <div class="collapse navbar-collapse" id="navbarMenu">
-                    <div class="mr-auto">
+            <?php if ( isset($_SESSION['user']) ) {
+                if ( $_SESSION['user']['user_type'] == 'admin'){
+                    echo'
+                    <div class="collapse navbar-collapse" id="navbarMenu">
                         <ul class="navbar-nav">
                             <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
-                            <li class="nav-item"><a class="nav-link" href="catalog.php">Book Catalog</a></li>
+                            <li class="nav-item"><a class="nav-link" href="./admin/index.php">Dashboard</a></li>
                         </ul>
-                    </div>
-                    <div class="">
+                    </div>';
+                    
+                } else {
+                    echo'
+                    <div class="collapse navbar-collapse" id="navbarMenu">
                         <ul class="navbar-nav">
-                            <li class="nav-item"><a class="nav-link"
-                            href="login.php">Log in </a></li>
-                            <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>
+                            <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
+                            <li class="nav-item"><a class="nav-link" href="./sell/sell.php">Sell book</a></li>
+                            <li class="nav-item"><a class="nav-link" href="./sell/index.php">Dashboard</a></li>
                         </ul>
-                    </div>
-                </div>';
+                    </div>';
+                }
             } else {
                 echo'
-                <div class="collapse navbar-collapse" id="navbarMenu">
-                    <ul class="navbar-nav">
-                        <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="./sell/sell.php">Sell book</a></li>
-                        <li class="nav-item"><a class="nav-link" href="./sell/index.php">Dashboard</a></li>
-                    </ul>
-                </div>';
+                    <div class="collapse navbar-collapse" id="navbarMenu">
+                        <div class="mr-auto">
+                            <ul class="navbar-nav">
+                                <li class="nav-item"><a class="nav-link" href="index.php">Home</a></li>
+                                <li class="nav-item"><a class="nav-link" href="catalog.php">Book Catalog</a></li>
+                            </ul>
+                        </div>
+                        <div class="">
+                            <ul class="navbar-nav">
+                                <li class="nav-item"><a class="nav-link"
+                                href="login.php">Log in </a></li>
+                                <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>
+                            </ul>
+                        </div>
+                    </div>';
             }
             ?>
         </header>

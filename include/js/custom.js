@@ -21,3 +21,7 @@ function displayImage(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+$('.message-item').click(function(){
+    $(this).addClass('active').siblings().removeClass('active');
+})

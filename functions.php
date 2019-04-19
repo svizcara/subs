@@ -1,12 +1,16 @@
-<?php 
-session_start();
+<?php session_start();
+
 // connect to database
+// !!!!!!!TO-DO: transfer to site config (config.php)
 $db = mysqli_connect('localhost', 'root', 'root', 'subsdbtest');
 if (!$db) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// variable declaration
+// !!!!!!!TO-DO: transfer to site config (config.php)
+$email_noreply = "sheryl.vizcara@gmail.com";
+
+// global variable declaration
 $username = "";
 $firstname = "";
 $lastname = "";
@@ -15,10 +19,11 @@ $email2   = "";
 $password = "";
 $newpwd1 = "";
 $newpwd2 = "";
-$email_noreply = "sheryl.vizcara@gmail.com";
 $book_id = "";
 $search = 0;
 $errors   = array(); 
+
+//---------------------- FUNCTIONS START HERE ----------------------
 
 // call the register() function if register_btn is clicked
 if (isset($_POST['register_btn'])) {
@@ -61,14 +66,37 @@ if (isset($_POST['editpublish_btn'])) {
     edit_book(1);
 }
 
-
-if (isset($_GET['catid'])) {
-  	$_SESSION['filterby'] = $_GET['catid'];
+// call the reset_password() function if resetpwd_btn is clicked
+if (isset($_POST['resetpwd_btn'])) {
+    reset_password();
 }
 
-if ( !isset($_GET['sortoption'])) {$_GET['sortoption'] = 0;}
+if ( isset($_GET['sortoption']) ){
+    $sortby = $_GET['sortoption'];
+} else {
+    $sortby = 0;
+}
 
-//if ( !isset($_GET['q']) ) $q='';
+if ( isset($_GET['search_btn'])) $search = $_GET['search_btn'];
+
+if ( isset($_GET['catid']) ){
+    $filterby = $_GET['catid'];
+} else {
+    $filterby = 0;
+}
+
+// call the new_password() function if newpwd_btn is clicked
+if ( isset($_POST['newpwd_btn']) ) {
+    new_password();
+}
+
+if ( isset($_POST['send_btn']) ) {
+    send_message($_POST['view']);
+}
+
+if ( isset($_POST['msgsend_btn']) ) {
+    send_message($_POST['book_id'],$_POST['usertwo_id']);
+}
 
 
 // REGISTER USER
@@ -206,30 +234,35 @@ function login(){
         
         $query = "SELECT * FROM users WHERE username='$username' AND password='$password_hash' LIMIT 1";
         
-        $results = mysqli_query($db, $query);
+        $retval = mysqli_query($db, $query);
         
-        if (mysqli_num_rows($results) == 1) { // user found
-        // check if user is admin or user
-			$logged_in_user = mysqli_fetch_assoc($results);
-        
-			if ($logged_in_user['user_type'] == 'admin') {
-				$_SESSION['user'] = $logged_in_user;
-				$_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in." </div>';
-				exit(header('location: admin/home.php'));		
-                
-			} else{
-                $user_id = $logged_in_user['id'];
-                $query = "SELECT * FROM userinfo WHERE user_id='$user_id'";
-                $results = mysqli_query($db, $query);
+        if (mysqli_num_rows($retval) == 1) { // user found
+            $logged_in_user = mysqli_fetch_assoc($retval);
+            // check if user deactivated or not
             
-				$_SESSION['user'] = $logged_in_user;
-                $_SESSION['userinfo'] = mysqli_fetch_assoc($results);
-				$_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in. </div>';
-				header('location: sell/index.php');
-                exit;
-			}
-		} else {
-			array_push($errors, "Wrong username or password.");
+            if ( $logged_in_user['isDeactivated'] ){
+                array_push($errors, "<strong>Account deactivated!</strong> Please contact site administrator.");
+            } else {
+                // check if user is admin or user
+                if ($logged_in_user['user_type'] == 'admin') {
+                    $_SESSION['user'] = $logged_in_user;
+                    $_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in. </div>';
+                    exit(header('location: admin/index.php'));		
+
+                } else{
+                    $user_id = $logged_in_user['id'];
+                    $query = "SELECT * FROM userinfo WHERE user_id='$user_id'";
+                    $results = mysqli_query($db, $query);
+
+                    $_SESSION['user'] = $logged_in_user;
+                    $_SESSION['userinfo'] = mysqli_fetch_assoc($results);
+                    $_SESSION['success']  = '<div class="alert alert-success"><strong>Login successful!</strong> You are now logged in. </div>';
+                    header('location: sell/index.php');
+                    exit;
+                }
+            } 
+        } else {
+                array_push($errors, "Wrong username or password.");
         }
     }
     mysqli_close($db);
@@ -263,6 +296,85 @@ function chpwd(){
         $_SESSION['success']  = '<div class="alert alert-success"><strong>Password successfully changed!</strong></div>';
         exit(header('location: settings.php'));
     }
+    mysqli_close($db);
+}
+
+// FORGOT PASSWORD
+function reset_password() {
+    global $db, $errors, $email_noreply;
+    
+    $email = e($_POST['email']);
+    
+    $query = "SELECT id FROM users WHERE email='$email'";
+    $retval = mysqli_query($db,$query);
+    
+    
+    if ( mysqli_num_rows($retval) == 1 ) {
+        $token = bin2hex(openssl_random_pseudo_bytes(50));
+        
+        $query = "SELECT id FROM password_resets WHERE email='$email'";
+        $retval = mysqli_query($db,$query);
+        if ( mysqli_num_rows($retval) == 1 ) {
+            $query = "UPDATE password_resets SET reset_token = '$token' WHERE email = '$email'";
+        } else {
+            $query = "INSERT INTO password_resets(email, reset_token) VALUES ('$email', '$token')";
+        }
+        $retval = mysqli_query($db, $query);
+        
+         // Send email to user with the token in a link they can click on
+        $to = $email;
+        $subject = 'Reset your password on Sell Used Books';
+        $message = "Hi there, click on this <a href=new-password.php?token=$token>link</a> to reset your password on our site";
+        $message = wordwrap($message,70);
+        $headers = 'From: SUBs team <'.$email_noreply .'>' . "\r\n";
+        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
+        mail($to, $subject, $message, $headers);
+        //header('location: pending.php?email=' . $email);    
+        
+        $_SESSION['success'] = '<div class="alert alert-success"> Password reset link sent to your email. <br/> Hi there, click on this <a href=new-password.php?token='.$token.'>link</a> to reset your password on our site </div>';
+    } else {
+        array_push($errors, "Sorry, email is not yet registered.");
+    }
+    
+    mysqli_close($db);
+}
+
+// NEW PASSWORD
+function new_password() {
+    global $db, $errors;
+    
+    if ( $_POST['token'] != '') {
+        $token      =  e($_POST['token']);
+        $newpwd1    =  e($_POST['newpwd']);
+        $newpwd2    =  e($_POST['confirmpwd']);
+        
+        $query = "SELECT email FROM password_resets WHERE reset_token='$token'";
+        $retval = mysqli_query($db, $query);
+        
+        if ( mysqli_num_rows($retval) == 1 ){
+            if ( $newpwd1 == $newpwd2 ){
+                $passwordhash = md5($newpwd1);
+                $row = mysqli_fetch_assoc($retval);
+                $email = $row['email'];
+                
+                $query = "UPDATE users SET password = '$passwordhash' WHERE email = '$email'";
+                if ( mysqli_query($db, $query) ) {
+                    $_SESSION['success'] = '<div class="alert alert-success"> <strong> Password changed!</strong> You may now <a href="login.php">login to your account using the new password</a>.</div>';
+                    header('location: login.php');
+                    exit();
+                } else {
+                    array_push($errors, "Error updating password. Please inform site administrator. ERROR DETAILS: ".mysqli_error($db));        
+                }
+            } else {
+                array_push($errors, "Passwords don't match.");    
+            }
+        } else {
+            array_push($errors, "Token is missing or invalid.");
+        }
+    } else {
+        array_push($errors, "Token is missing or invalid.");
+    }
+    
     mysqli_close($db);
 }
 
@@ -401,7 +513,7 @@ function list_books() {
     $retval = mysqli_query($db, $query); 
     
     if (mysqli_num_rows($retval) > 0) {
-        echo "<table class='table table-hover'>";
+        echo "<table class='table table-sm table-hover'>";
         echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<tr><td>".$row['book_id']."</td><td>";
@@ -412,11 +524,24 @@ function list_books() {
             } else {
                 echo "<span class='badge badge-light'>Draft</span>";
             }
-            echo "</td><td><a class='btn btn-outline-secondary btn-sm' href='edit.php?id=".$row['book_id']."'>Edit</a>";
-            if ($row['isPublished']){
-                echo "<a class='btn btn-outline-warning btn-sm' href='manage.php?unpub=".$row['book_id']."'>Unpublish</button>";
+            if ($row['bookDeactivated']){
+                echo "<span class='badge badge-danger'>Deactivated</span>";
             } else {
-                echo "<a class='btn btn-primary btn-sm' href='manage.php?pub=".$row['book_id']."'>Publish</a>";
+                echo "<span class='badge badge-success'>Active</span>";
+            }
+            echo "</td><td><button class='btn btn-outline-secondary btn-sm' ";
+            if ( $row['bookDeactivated'] ) echo 'disabled'; 
+            echo "><a href='edit.php?id=".$row['book_id']."' ";
+            if ( $row['bookDeactivated'] ) echo "onclick='return false;'"; 
+            echo ">Edit</a></button>";
+            if ($row['isPublished']){
+                echo "<button class='btn btn-outline-warning btn-sm' name='unpub' value=".$row['book_id']." ";
+                if ( $row['bookDeactivated'] ) echo 'disabled'; 
+                echo ">Unpublish</button>";
+            } else {
+                echo "<button class='btn btn-primary btn-sm' name='pub' value=".$row['book_id']." ";
+                if ( $row['bookDeactivated'] ) echo 'disabled'; 
+                echo ">Publish</button>";
             }
             echo "</td></tr>";
         }
@@ -498,6 +623,7 @@ function edit_book($isPublished=0){
     //mysqli_close($db);
 }
 
+// DISPLAY CATALOG FUNCTION WITH FUNCTIONALITY FOR SEARCH, FILTER, AND SORT
 function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
     global $db, $errors, $q;
     
@@ -521,16 +647,16 @@ function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
         $q = e($_GET['q']);    
         
         if ( $search == 1 ) { 
-            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND (author  LIKE'%$q%' OR title LIKE '%$q%') ORDER BY $sortphrase"; 
+            $query = "SELECT * FROM books WHERE isPublished=1 AND bookDeactivated=0 $filterphrase AND (author  LIKE'%$q%' OR title LIKE '%$q%') ORDER BY $sortphrase"; 
         }
         if ( $search == 2 ) {
-            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND title LIKE '%$q%' ORDER BY date_published DESC"; 
+            $query = "SELECT * FROM books WHERE isPublished=1 AND bookDeactivated=0 $filterphrase AND title LIKE '%$q%' ORDER BY date_published DESC"; 
         }
         if ( $search == 3 ) {
-            $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase AND author  LIKE'%$q%' ORDER BY date_published DESC"; 
+            $query = "SELECT * FROM books WHERE isPublished=1 AND bookDeactivated=0 $filterphrase AND author  LIKE'%$q%' ORDER BY date_published DESC"; 
         }
     } else {
-        $query = "SELECT * FROM books WHERE isPublished=1 $filterphrase ORDER BY $sortphrase";
+        $query = "SELECT * FROM books WHERE isPublished=1 AND bookDeactivated=0 $filterphrase ORDER BY $sortphrase";
     }
     
     $retval = mysqli_query($db, $query);
@@ -540,9 +666,9 @@ function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<div class='catalog-item float-left'><a href='view.php?view=".$row['book_id']."'>";
             echo "<div class='thumbnail'><img src='./content/uploads/".$row['photo']."' alt='".$row['title']."'/></div>";
-            echo "<span class='book-title'>".$row['title']."</span>";
-            echo "<span class='book-author'> | ".$row['author']."</span><hr/>";
-            echo "<span class='book-price caption'> Php ".$row['price']."</span>";
+            echo "<div class='caption'><span class='book-title'>".$row['title']."</span>";
+            echo "<span class='book-author'>".$row['author']."</span></div>";
+            echo "<div class='book-price'><hr/><span>Php ".$row['price']."</span></div>";
             echo "</a></div>";
         }
         echo "</div>";
@@ -551,7 +677,6 @@ function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
     }
     mysqli_close($db);
 }
-
 
 // VIEW BOOK 
 function display_book($book_id) {
@@ -581,10 +706,57 @@ function display_book($book_id) {
     //echo "<a class='btn btn-primary btn-block'>Contact Seller</a>";
     echo "<h2>Contact Seller</h2>";
     echo "<div class='d-flex flex-column border' id='contact-seller-container'>";
-    echo "<a class='btn btn-primary btn-sm' href='#'>Send online message</a>"; 
+    echo "<button class='btn btn-primary btn-sm' data-toggle='modal' data-target='#sendMessage'>Send online message</button>"; 
     echo "<span align='center'>OR</span>";
     echo "<a class='btn btn-light btn-sm' href='#'>09XX-XXX-XXXX</a>";
     echo "</div></div>";
+    
+    echo '
+        <div class="modal fade" id="sendMessage" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="document">';
+    if ( !isset($_SESSION['user']) ){
+        echo '<div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="sendMessageLabel">Login to send seller a message</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                You must be logged in to send an online message!
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <a class="btn btn-primary" href="login.php">Login</a>
+              </div>
+            </div>
+          </div>
+        </div>';
+    } else {
+        echo '
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="sendMessageLabel">Send seller a message</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <form method="post" action="view.php">
+                  <div class="modal-body">
+                    <input type="number" name="view" value='.$book_id.' hidden>
+                    <textarea class="form-control" name="message" placeholder="Write your message to the seller here">I am interested in buying this book.</textarea>
+                    
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" name="send_btn">Send message</button>
+                  </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+        ';
+    }
     
     echo "<div class='view-book-secondary-details col-lg-8'>";
     echo "<h2>Book Details</h2>";
@@ -625,7 +797,233 @@ function display_book($book_id) {
     echo"</div>";
 }
 
-// escape string
+// SEND SELLER A MESSAGE
+function send_message($book_id,$usertwo_id=0){
+    global $db, $errors;
+    
+    $sent_by = $_SESSION['user']['id'];
+    $message = e($_POST['message']);
+    
+    $query = "SELECT * FROM books WHERE book_id=".$book_id;
+    $retval = mysqli_query($db, $query); 
+    $book = mysqli_fetch_assoc($retval);
+    
+    $page = htmlspecialchars($_SERVER['PHP_SELF']);
+    
+    if ($sent_by == $book['seller_id']){
+        $sent_to = $usertwo_id;
+    } else {
+        $sent_to = $book['seller_id'];
+    }
+    
+    if ( count($errors) == 0) {
+        $query = "INSERT INTO mbox ( book_id, sent_by, sent_to, message) VALUES ($book_id, $sent_by, $sent_to, '$message')";
+        if ( mysqli_query($db, $query) ) {
+            if (!$usertwo_id){
+                $_SESSION['success']  = '<div class="alert alert-success alert-dismissible"> <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> Message sent! </div>';
+            }
+            exit(header('location:'.$page.'?'.($page == '/subs/view.php' ? 'view='.$book_id : ($page == '/subs/sell/messages.php' ? 'book_id='.$book_id.'&usertwo_id='.$usertwo_id : ''))));		
+        } else {
+            array_push($errors, "Something went wrong. :( <br/>".mysqli_error($db));
+        }
+    }
+}
+// SHOW MESSAGES 
+function list_messages(){
+    global $db, $errors, $usertwo_id;
+    
+    $user_id = $_SESSION['user']['id'];
+    $page = htmlspecialchars($_SERVER['PHP_SELF']);
+    if (isset($_GET['book_id'])){
+        $q1 = $_GET['book_id'];
+        $q2 = $_GET['usertwo_id'];
+    } else {
+        $q1 = 0;
+        $q2 = 0;
+    }
+    
+    
+    $query = "SELECT DISTINCT book_id FROM mbox WHERE sent_to=$user_id OR sent_by=$user_id";
+    $retval = mysqli_query($db, $query);
+
+    if ( mysqli_num_rows($retval) > 0) {
+        echo '<div class="messages-list col col-lg-4 float-left"><div class="list-group">';
+        
+        while ($row = mysqli_fetch_assoc($retval)){
+            $query = "SELECT * FROM books WHERE book_id=".$row['book_id'];
+            $retval_book = mysqli_query($db, $query);
+            $book = mysqli_fetch_assoc($retval_book);
+            
+            
+            if ( $user_id == $book['seller_id'] ) {
+                $query = "SELECT sent_by, date_created, message FROM mbox WHERE sent_to=$user_id AND book_id=".$row['book_id']." GROUP BY sent_by ORDER BY date_created DESC";
+                $retval_buyers = mysqli_query($db, $query);
+                
+                while ($msgs = mysqli_fetch_assoc($retval_buyers)){
+                    $buyer_id = $msgs['sent_by'];
+                    $query = "SELECT * FROM users WHERE id=$buyer_id";
+                    $retval_buyer = mysqli_query($db, $query);
+                    $buyer = mysqli_fetch_assoc($retval_buyer);
+                    
+                    echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$buyer_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$buyer_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-danger">selling</span><span class="timestamp">'.$msgs['date_created'].'</span><span class="sender-name">'.$buyer['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                }
+            } 
+            else {
+                $query = "SELECT sent_to, date_created, message FROM mbox WHERE sent_by=$user_id AND book_id=".$row['book_id']." GROUP BY sent_to ORDER BY date_created DESC";
+                $retval_seller = mysqli_query($db, $query);
+                
+                while ($msgs = mysqli_fetch_assoc($retval_seller)){
+                    $seller_id = $msgs['sent_to'];
+                    $query = "SELECT * FROM users WHERE id=$seller_id";
+                    $retval_seller = mysqli_query($db, $query);
+                    $seller = mysqli_fetch_assoc($retval_seller);
+                    
+                    echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$seller_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$seller_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-success">buying</span><span class="timestamp">'.$msgs['date_created'].'</span><span class="sender-name">'.$seller['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                }
+            }
+        }
+        echo '</div></div>';
+    } else {
+        echo "<div class='filler'>No messages to show.";
+        echo "<br/><a href=''>Start selling</a> OR <a href=''>Find books to buy.</a></div>";
+    }
+}
+
+function show_messages($book_id=0, $usertwo_id=0){
+    global $db, $errors;
+    
+    $user_id = $_SESSION['user']['id'];
+    
+    $query = "SELECT * FROM books WHERE book_id=".$book_id;
+    $retval_book = mysqli_query($db, $query);
+    $book = mysqli_fetch_assoc($retval_book);
+    
+    $query = "SELECT * FROM users WHERE id=$usertwo_id";
+    $retval_usertwo = mysqli_query($db, $query);
+    $usertwo = mysqli_fetch_assoc($retval_usertwo);
+    
+    $query = "SELECT * FROM mbox WHERE book_id=$book_id AND (sent_to=$usertwo_id OR sent_by=$usertwo_id) ORDER BY date_created ASC";
+    $retval = mysqli_query($db, $query);
+    
+    
+    if ( mysqli_num_rows($retval) > 0) {
+        echo '<div class="message-header text-light bg-dark">Viewing conversation with <strong>'.$usertwo['username'].'</strong> about <strong>'.$book['title'].'</strong></div><div class="message-body">';
+        while ($row = mysqli_fetch_assoc($retval)){
+            
+            if ( $row['sent_to'] == $user_id){
+                echo '<div class="sender-bubble">';
+                echo '<p>'.$row['message'].'</p>';
+                echo '<span class="timestamp">'.$row['date_created'].'</span>';
+                echo '</div>';
+            } 
+            
+            if ( $row['sent_by'] == $user_id) {
+                echo '<div class="receiver-bubble">';
+                echo '<p>'.$row['message'].'</p>';
+                echo '<span class="timestamp">'.$row['date_created'].'</span>';
+                echo '</div>';
+            }
+        }
+        echo '</div>';
+        echo '<div class="message-response">';
+        echo '<form method="post" action="messages.php">';
+        echo '
+        <input type="number" name="book_id" value='.$book_id.' hidden>
+        <input type="number" name="usertwo_id" value='.$usertwo_id.' hidden>
+        <textarea class="form-control col col-lg-10 float-left" name="message" placeholder="Write your response here..."></textarea>
+        <button type="submit" class="btn btn-dark col col-lg-2 float-right" name="msgsend_btn">Send</button>
+        </div>';
+        echo '</form>';
+        
+    } else {
+        echo "No messages to show.";
+    }
+    mysqli_close($db);
+}
+
+// LIST USERS FOR USER MANAGEMENT
+function list_users() {
+    global $db, $errors;
+    
+    $query = "SELECT id, username, email, date_registered, isDeactivated, COUNT(book_id) AS books FROM (users JOIN books ON id=seller_id) GROUP BY id";
+    $retval = mysqli_query($db, $query); 
+    
+    if (mysqli_num_rows($retval) > 0) {
+        echo "<table class='table table-hover table-sm'>";
+        echo "<thead class='thead-dark'><tr><th>User ID</th><th>Username</th><th>Email</th><th>Date Created</th><th># of posted books</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        
+        while($row = mysqli_fetch_assoc($retval)) {
+            echo "<tr><td>".$row['id']."</td><td>";
+            echo $row['username']."</td><td>";
+            echo $row['email']."</td><td>".$row['date_registered']."</td><td>";
+            echo "<a href='view-posts.php?manage=1&id=".$row['id']."'>".$row['books']."</a></td><td>";
+            
+            if ( $row['isDeactivated'] ){
+                echo "<span class='badge badge-danger'>Deactivated</span>";
+            } else {
+                echo "<span class='badge badge-success'>Active</span>";
+            }
+            echo"</td><td>";
+            if ($row['isDeactivated']){
+                echo "<a class='btn btn-outline-warning btn-sm' href='manage-users.php?activate=".$row['id']."'>Activate</button>";
+            } else {
+                echo "<a class='btn btn-outline-danger btn-sm' href='manage-users.php?deactivate=".$row['id']."'>Deactivate</a>";
+            }
+            echo "</td></tr>";
+        }
+        echo "</tbody></table>";
+    } else {
+        echo "<a href='#'> No results. </a>";
+    }
+    mysqli_close($db);
+}
+
+// MANAGE BOOKS POSTED BY SELECTED USER
+function manage_books($seller_id='') {
+    global $db, $errors;
+    
+    $query = "SELECT * FROM users WHERE id='$seller_id'";
+    $retval = mysqli_query($db, $query); 
+    $row = mysqli_fetch_assoc($retval);
+    
+    echo "<div class='panel-description' >Managing published books of <strong>".$row['username']."</strong>.</div>";
+        
+    $query = "SELECT * FROM books WHERE seller_id='$seller_id'";
+    $retval = mysqli_query($db, $query); 
+    
+    if (mysqli_num_rows($retval) > 0) {
+        echo "<table class='table table-sm table-hover'>";
+        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        while($row = mysqli_fetch_assoc($retval)) {
+            echo "<tr><td>".$row['book_id']."</td><td>";
+            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
+            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
+            if ($row['isPublished']){
+                echo "<span class='badge badge-success'>Published</span>";
+            } else {
+                echo "<span class='badge badge-light'>Draft</span>";
+            }
+            if ($row['bookDeactivated']){
+                echo "<span class='badge badge-danger'>Deactivated</span>";
+            } else {
+                echo "<span class='badge badge-success'>Active</span>";
+            }
+            echo "</td><td>";
+            if ($row['bookDeactivated']){
+                echo "<button class='btn btn-outline-warning btn-sm' name='activate_book' value=".$row['book_id'].">Activate</button>";
+            } else {
+                echo "<button class='btn btn-outline-danger btn-sm' name='deactivate_book' value=".$row['book_id'].">Deactivate</button>";
+            }
+            echo "</td></tr>";
+        }
+        echo "</tbody></table>";
+    } else {
+        echo "<a href='sell.php'> Sell your book. </a>";
+    }
+    mysqli_close($db);
+}
+
+// escape string function for processing input texts
 function e($val){
 	global $db;
 	return mysqli_real_escape_string($db, trim($val));
@@ -650,7 +1048,7 @@ function random_pwd($chars) {
   return substr(str_shuffle($pwdchars), 0, $chars);
 }
 
-// list category
+// list category as options
 function list_category($selected=0) {
     global $db;
     $query = "SELECT * FROM book_category";
@@ -664,7 +1062,7 @@ function list_category($selected=0) {
     }
 }
 
-// list category
+// list regions
 function list_regions($selected=0) {
     global $db;
     $query = "SELECT loc_id, region FROM location";
@@ -692,15 +1090,15 @@ function get_location($loc_id) {
 
 // list category as filters
 function list_category_as_filters() {
-    global $db;
+    global $db,$errors,$filterby;
     $query = "SELECT * FROM book_category";
     $retval = mysqli_query($db, $query);
     $page = htmlspecialchars($_SERVER['PHP_SELF']);
 //    echo "<a class='btn btn-secondary btn-sm filter-button' href='$page?catid=0'>Show all</a>";
-    echo "<button type='submit' class='btn btn-secondary btn-sm filter-button' name='catid' value=0>Show all</button>";
+    echo "<button type='submit' class='btn ".($filterby==0 ?  'btn-secondary':'btn-light')." btn-sm filter-button' name='catid' value=0>Show all</button>";
     while($row = mysqli_fetch_assoc($retval)) {
 //        echo "<a class='btn btn-light btn-sm filter-button' href='$page?catid=".$row['cat_id']."'>".$row['category']."</a>";
-        echo "<button type='submit' class='btn btn-light btn-sm filter-button' name='catid' value='".$row['cat_id']."'>".$row['category']."</button>";
+        echo "<button type='submit' class='btn btn-sm filter-button ".($filterby==$row['cat_id'] ?  'btn-secondary':'btn-light')."' name='catid' value='".$row['cat_id']."'>".$row['category']."</button>";
     }
 //    echo "</div>";
 }

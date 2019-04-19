@@ -19,6 +19,11 @@ label {
 /*    background-color: antiquewhite;*/
 }
 
+.panel h1 {
+    font-size: 2em;
+    margin-bottom: 1em;
+}
+
 .form-panel {
     padding:40px;
 }
@@ -86,6 +91,9 @@ label {
 
 .catalog-item {
     margin: 10px 10px 10px 10px;
+    width: 200px;
+    height: 270px;
+    position: relative;
 }
 
 .catalog-item a {
@@ -96,8 +104,36 @@ label {
     text-decoration: none;
 }
 
-.caption {
+
+.catalog-item .book-price {
     display: block;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+}
+
+.catalog-item .book-price hr{
+    margin: 2px;
+}
+
+.catalog-item .caption {
+    display: block;
+    height: 90px;
+    overflow: hidden;   
+}
+
+.catalog-item .caption span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.catalog-item .caption span.book-title {
+    max-height: 25px;
+}
+.catalog-item .caption span.book-author {
+    max-height: 20px;
 }
 
 .book-title { font-weight: bold; }
@@ -110,6 +146,7 @@ label {
     font-size: 0.8em;
 }
 
+
 .view-panel {
     padding: 2em;
 }
@@ -120,6 +157,13 @@ label {
     font-size: 1em;
     color: darkslategray;
     font-stretch: extra-expanded;
+}
+
+.view-panel .caption {
+    display: block;
+}
+
+.view-panel .view-book-title {
 }
 
 .view-book-container{
@@ -143,7 +187,7 @@ label {
 }
 
 .view-book-primary-details {
-    float: left;
+    float: right;
     margin-bottom: 2em;
 }
 
@@ -232,4 +276,96 @@ input[name=search-book] {
     width: auto;
     margin-left: 1em;
     border-radius: 0px;
+}
+
+.sender-bubble, .receiver-bubble {
+    width: 100%;
+    clear: both;
+}
+
+.sender-bubble {
+    align-items: left;
+    text-align: left;
+}
+
+.sender-bubble p {
+    display: inline-block;
+    background-color: #eeeeee;
+    padding: 1em 1em 1em 1em;
+    border-radius: 5px;
+    margin-bottom: 0;
+}
+
+.receiver-bubble {
+    align-items: right;
+    text-align: right;
+}
+
+.receiver-bubble p {
+    display: inline-block;
+    background-color: azure;
+    padding: 1em 1em 1em 1em;
+    border-radius: 5px;
+    margin-bottom: 0;
+    clear: both;
+}
+
+.timestamp {
+    font-size: 0.6em;
+    font-weight: lighter;
+    color: #aaaaaa;
+    display: block;
+}
+
+.receiver-bubble timestamp {
+    display: block;
+}
+
+.messages-list a span {
+    display: block;
+}
+
+.messages-list a span.book-title {
+    font-size: 0.7em;
+}
+
+.messages-list a span.sender-name {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.tag {
+    float: right;
+}
+.message-box {
+    padding:0;
+    border-radius: 10px;
+}
+.message-header {
+/*    background-color: black;*/
+    padding: 2px 1em 2px 1em;
+    margin: 0;
+    border-radius: 9px 9px 0px 0px;
+}
+
+.message-body {
+    padding: 1em;
+    height: 350px;
+    max-height: 350px;
+    display: block;
+    overflow-y: scroll;
+}
+
+.message-response textarea{
+    max-height: 50px;
+    overflow-y: scroll;
+}
+
+.message-response button[name='msgsend_btn']{
+    height:50px;
+}
+
+.filler {
+    text-align: center;
+    margin: auto;
 }

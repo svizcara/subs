@@ -1,7 +1,7 @@
 <?php include 'header.php';?>
 
 <div class="panel form-panel border">
-    <form method="post" action="login.php">
+    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
         <h1 class="d-flex justify-content-center">Login</h1>
         <div class="form-group">
             <label for="username">Username</label>
@@ -13,7 +13,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block" name="login_btn">Login</button>
-        <span class="d-flex justify-content-center"> <a href=""> Forgot your password? </a> </span>
+        <span class="d-flex justify-content-center"> <a href="forgot-password.php"> Forgot your password? </a> </span>
 
     </form>
 </div>
