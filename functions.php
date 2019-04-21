@@ -1,14 +1,11 @@
 <?php session_start();
 
 // connect to database
-// !!!!!!!TO-DO: transfer to site config (config.php)
-$db = mysqli_connect('localhost', 'root', 'root', 'subsdbtest');
+$db = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
 if (!$db) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// !!!!!!!TO-DO: transfer to site config (config.php)
-$email_noreply = "sheryl.vizcara@gmail.com";
 
 // global variable declaration
 $username = "";
@@ -21,6 +18,7 @@ $newpwd1 = "";
 $newpwd2 = "";
 $book_id = "";
 $search = 0;
+$page = htmlspecialchars($_SERVER['PHP_SELF']);
 $errors   = array(); 
 
 //---------------------- FUNCTIONS START HERE ----------------------
@@ -71,6 +69,17 @@ if (isset($_POST['resetpwd_btn'])) {
     reset_password();
 }
 
+// call the submit_feedback() function if submitfeedback_btn is clicked
+if (isset($_POST['submitfeedback_btn'])) {
+    submit_feedback();
+}
+
+// check the book id if an item from the book catalog is selected
+if (isset($_GET['view'])) {
+  	$book_id = $_GET['view'];
+}
+
+// set default value for sortby
 if ( isset($_GET['sortoption']) ){
     $sortby = $_GET['sortoption'];
 } else {
@@ -96,6 +105,10 @@ if ( isset($_POST['send_btn']) ) {
 
 if ( isset($_POST['msgsend_btn']) ) {
     send_message($_POST['book_id'],$_POST['usertwo_id']);
+}
+
+if ( isset($_POST['savecfg_btn']) ) {
+    save_config();
 }
 
 
@@ -172,7 +185,7 @@ function register(){
 	// register user if there are no errors in the form
 	if (count($errors) == 0) {
         $password = random_pwd(12);
-		$password_hash = md5($password);//encrypt the password before saving in the database
+		$password_hash = md5($password);//TO-DO make this more secure
 
 		if (isset($_POST['user_type'])) {
 			$user_type = e($_POST['user_type']);
@@ -183,29 +196,35 @@ function register(){
 			header('location: index.php');
 		}else{
 			$query = "INSERT INTO users (username, user_type, password, email, first_name, last_name) VALUES('$username', 'user', '$password_hash','$email1', '$firstname', '$lastname')";
-			mysqli_query($db, $query);
-            
-            $query = "SELECT id FROM users WHERE username='$username'";
-            $results = mysqli_query($db, $query);
-            $row = mysqli_fetch_assoc($results);
-            $user_id = $row['id'];
-                
-            $query = "INSERT INTO userinfo (user_id, location, mobile, shortbio, birthdate, gender, profile_photo) VALUES('$user_id', '', '','', '', '', '')";
-			mysqli_query($db, $query);
-            
-            $to = $email1;
-            $subject = 'You have registered to SUBs website';
-            $message = 'Welcome' . $firstname . ''
-                . 'You have registered with username:'
-                . 'Username: ' . $username . ''
-                . 'You may login using this password: '. $password . '';
-            $headers = 'From: SUBs team <'.$email_noreply .'>' . "\r\n";
-            $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
+            if ($retval=mysqli_query($db, $query)){
+                $query = "SELECT id FROM users WHERE username='$username'";
+                $results = mysqli_query($db, $query);
+                $row = mysqli_fetch_assoc($results);
+                $user_id = $row['id'];
 
-            mail($to, $subject, $message, $headers);
-            
-			$_SESSION['success']  = '<div class="alert alert-success alert-dismissible"> <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> <strong>Successfully registered! </strong> An initial password has been sent to your email address.  '.$password.'</div>';
-			exit(header('location: register.php'));		
+                $query = "INSERT INTO userinfo (user_id, mobile, shortbio, gender, profile_photo) VALUES('$user_id','','', '', '')";
+                if($retval = mysqli_query($db, $query)){
+                    $to = $email1;
+                    $subject = 'You have registered to SUBs website';
+                    $message = 'Welcome' . $firstname . ''
+                        . 'You have registered with username:'
+                        . 'Username: ' . $username . ''
+                        . 'You may login using this password: '. $password . '';
+                    $headers = 'From: SUBs team <'.$email_noreply .'>' . "\r\n";
+                    $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
+
+                    if( mail($to, $subject, $message, $headers) ) {
+                        $_SESSION['success']  = '<div class="alert alert-success alert-dismissible"> <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> <strong>Successfully registered! </strong> An initial password has been sent to your email address.</div>';
+                    } else {
+                        array_push($errors,'<div class="alert alert-success alert-dismissible"> Email not sent:'.$password.'</div>');
+                    }
+                    exit(header('location: register.php'));	
+                } else {
+                    array_push($errors, mysqli_error($db)); 
+                }
+            } else {
+                array_push($errors, mysqli_error($db)); 
+            }
 		}
 	}
     mysqli_close($db);
@@ -392,6 +411,11 @@ function update_profile(){
     $email     = e($_POST['email']);
     $bday      = e($_POST['bday']);
     $gender    = e($_POST['gender']);
+    if (isset($_POST['displaymobile'])){
+        $display = 1;
+    } else {
+        $display = 0;
+    }
     
     if (empty($firstname)){
         array_push($errors, "First name is required.");
@@ -411,7 +435,7 @@ function update_profile(){
         mysqli_query($db, $query);
     
         
-        $query = "UPDATE userinfo SET location='$location', mobile='$mobile', shortbio='$shortbio', birthdate='$bday', gender='$gender' WHERE user_id=$user_id";
+        $query = "UPDATE userinfo SET location='$location', mobile='$mobile', shortbio='$shortbio', birthdate='$bday', gender='$gender', display_mobile=$display WHERE user_id=$user_id";
         if(mysqli_query($db, $query)){
             $_SESSION['user']['first_name'] = $firstname;
             $_SESSION['user']['last_name'] = $lastname;
@@ -421,13 +445,13 @@ function update_profile(){
             $_SESSION['userinfo']['shortbio'] = $shortbio;
             $_SESSION['userinfo']['birthdate'] = $bday;
             $_SESSION['userinfo']['gender'] = $gender;
+            $_SESSION['userinfo']['display_mobile'] = $display;
             $_SESSION['success']  = '<div class="alert alert-success"><strong>Profile updated!</strong></div>';
         } else {
             array_push($errors, "Error updating database");
         }
     }
     
-    mysqli_close($db);
 }
 
 // SAVE OR PUBLISH BOOK FOR SALE
@@ -514,10 +538,10 @@ function list_books() {
     
     if (mysqli_num_rows($retval) > 0) {
         echo "<table class='table table-sm table-hover'>";
-        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        echo "<thead class='table-header'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<tr><td>".$row['book_id']."</td><td>";
-            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
+            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".(empty($row['photo']) ? 'book-icon.png' : $row['photo'])."' alt=".$row['title']."/></div></td><td>";
             echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
             if ($row['isPublished']){
                 echo "<span class='badge badge-success'>Published</span>";
@@ -547,7 +571,7 @@ function list_books() {
         }
         echo "</tbody></table>";
     } else {
-        echo "<a href='sell.php'> Sell your book. </a>";
+        echo "<div class='wide-panel'><a class='btn btn-primary btn-block' href='sell.php'>  Start selling </a></div>";
     }
     mysqli_close($db);
 }
@@ -665,7 +689,7 @@ function display_catalog($filterby=0, $search=0, $sortby=0, $q='') {
         echo "<div class='catalog-container'>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<div class='catalog-item float-left'><a href='view.php?view=".$row['book_id']."'>";
-            echo "<div class='thumbnail'><img src='./content/uploads/".$row['photo']."' alt='".$row['title']."'/></div>";
+            echo "<div class='thumbnail'><img src='./content/uploads/".(empty($row['photo']) ? 'book-icon.png' : $row['photo'])."' alt='".$row['title']."'/></div>";
             echo "<div class='caption'><span class='book-title'>".$row['title']."</span>";
             echo "<span class='book-author'>".$row['author']."</span></div>";
             echo "<div class='book-price'><hr/><span>Php ".$row['price']."</span></div>";
@@ -695,20 +719,18 @@ function display_book($book_id) {
     $cat = mysqli_fetch_assoc($retval);
     
     //display photo large size
-    echo "<div class='view-book-container col-lg-8'><img src='./content/uploads/".$book['photo']."'/></div>";
+    echo "<div class='view-book-container col-lg-8'><img src='./content/uploads/".(empty($book['photo']) ? 'book-icon.png' : $book['photo'])."'/></div>";
     echo "<div class='view-book-primary-details col-lg-4'>";
     echo "<span class='view-book-title caption'>".$book['title']."</span>";
     echo "<span class='view-book-author caption'> ".$book['author']."</span><hr/>";
     echo "<span class='view-book-price caption'>Php ".$book['price']."</span>";
-    //echo "<span class='view-book-title caption'>".$book['title']"</span";
     echo "<span class='view-book-seller caption'>Sold by ".$seller['first_name']." ".$seller['last_name']."</span>";
-    echo "<span class='view-seller-location caption'>".$seller['location']."</span>";
-    //echo "<a class='btn btn-primary btn-block'>Contact Seller</a>";
+    echo "<span class='view-seller-location caption'>".get_location($seller['location'])."</span>";
     echo "<h2>Contact Seller</h2>";
     echo "<div class='d-flex flex-column border' id='contact-seller-container'>";
     echo "<button class='btn btn-primary btn-sm' data-toggle='modal' data-target='#sendMessage'>Send online message</button>"; 
     echo "<span align='center'>OR</span>";
-    echo "<a class='btn btn-light btn-sm' href='#'>09XX-XXX-XXXX</a>";
+    echo "<button class='btn btn-light btn-sm' id='displayMobile' name=".$seller['display_mobile']." value='".$seller['mobile']."'>09XX-XXX-XXXX</button>";
     echo "</div></div>";
     
     echo '
@@ -828,7 +850,8 @@ function send_message($book_id,$usertwo_id=0){
         }
     }
 }
-// SHOW MESSAGES 
+
+// LIST MESSAGES PER BOOK ITEM PER USER
 function list_messages(){
     global $db, $errors, $usertwo_id;
     
@@ -842,12 +865,13 @@ function list_messages(){
         $q2 = 0;
     }
     
-    
     $query = "SELECT DISTINCT book_id FROM mbox WHERE sent_to=$user_id OR sent_by=$user_id";
     $retval = mysqli_query($db, $query);
 
     if ( mysqli_num_rows($retval) > 0) {
-        echo '<div class="messages-list col col-lg-4 float-left"><div class="list-group">';
+        echo '<div class="messages-list col col-lg-4 float-left">';
+        echo '<div class="message-header">Your messages. <small>Click an item to see messages.</small></div>';
+        echo '<div class="list-group">';
         
         while ($row = mysqli_fetch_assoc($retval)){
             $query = "SELECT * FROM books WHERE book_id=".$row['book_id'];
@@ -856,29 +880,34 @@ function list_messages(){
             
             
             if ( $user_id == $book['seller_id'] ) {
-                $query = "SELECT sent_by, date_created, message FROM mbox WHERE sent_to=$user_id AND book_id=".$row['book_id']." GROUP BY sent_by ORDER BY date_created DESC";
-                $retval_buyers = mysqli_query($db, $query);
-                
-                while ($msgs = mysqli_fetch_assoc($retval_buyers)){
-                    $buyer_id = $msgs['sent_by'];
-                    $query = "SELECT * FROM users WHERE id=$buyer_id";
-                    $retval_buyer = mysqli_query($db, $query);
-                    $buyer = mysqli_fetch_assoc($retval_buyer);
-                    
-                    echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$buyer_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$buyer_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-danger">selling</span><span class="timestamp">'.$msgs['date_created'].'</span><span class="sender-name">'.$buyer['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                $query = "SELECT sent_by, ANY_VALUE(date_created) as date, ANY_VALUE(message) as msg FROM (SELECT sent_by, date_created, message FROM mbox WHERE sent_to=$user_id AND book_id=".$row['book_id']." ORDER BY date_created DESC) AS m GROUP BY sent_by";
+                if ( $retval_buyers = mysqli_query($db, $query) ) {
+                    while ($msgs = mysqli_fetch_assoc($retval_buyers)){
+                        $buyer_id = $msgs['sent_by'];
+                        $query = "SELECT * FROM users WHERE id=$buyer_id";
+                        $retval_buyer = mysqli_query($db, $query);
+                        $buyer = mysqli_fetch_assoc($retval_buyer);
+
+                        echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$buyer_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$buyer_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-danger">selling</span><span class="timestamp">'.$msgs['date'].'</span><span class="sender-name">'.$buyer['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                    } 
+                } else {
+                    array_push($errors, 'Error fetching data from database. ERROR DETAILS'.mysqli_error($db));
                 }
             } 
             else {
-                $query = "SELECT sent_to, date_created, message FROM mbox WHERE sent_by=$user_id AND book_id=".$row['book_id']." GROUP BY sent_to ORDER BY date_created DESC";
-                $retval_seller = mysqli_query($db, $query);
+                $query = "SELECT sent_to, ANY_VALUE(date_created) as date, ANY_VALUE(message) as msg FROM (SELECT sent_to, date_created, message FROM mbox WHERE sent_by=$user_id AND book_id=".$row['book_id']." ORDER BY date_created DESC) AS m GROUP BY sent_to";
                 
-                while ($msgs = mysqli_fetch_assoc($retval_seller)){
-                    $seller_id = $msgs['sent_to'];
-                    $query = "SELECT * FROM users WHERE id=$seller_id";
-                    $retval_seller = mysqli_query($db, $query);
-                    $seller = mysqli_fetch_assoc($retval_seller);
-                    
-                    echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$seller_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$seller_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-success">buying</span><span class="timestamp">'.$msgs['date_created'].'</span><span class="sender-name">'.$seller['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                if( $retval_seller = mysqli_query($db, $query) ){
+                    while ( $msgs = mysqli_fetch_assoc($retval_seller) ){
+                        $seller_id = $msgs['sent_to'];
+                        $query = "SELECT * FROM users WHERE id=$seller_id";
+                        $retval_seller = mysqli_query($db, $query);
+                        $seller = mysqli_fetch_assoc($retval_seller);
+
+                        echo '<a href="'.$page.'?book_id='.$row['book_id'].'&usertwo_id='.$seller_id.'" class="message-item list-group-item '.($q1==$row['book_id'] && $q2==$seller_id ? 'list-group-item-secondary' : '').' list-group-item-action"><span class="tag badge badge-success">buying</span><span class="timestamp">'.$msgs['date'].'</span><span class="sender-name">'.$seller['username'].'</span><span class="book-title">'.$book['title'].'</span></a>';
+                    }
+                } else {
+                    array_push($errors, 'Error fetching data from database. ERROR DETAILS'.mysqli_error($db));
                 }
             }
         }
@@ -889,6 +918,7 @@ function list_messages(){
     }
 }
 
+// SHOW MESSAGES
 function show_messages($book_id=0, $usertwo_id=0){
     global $db, $errors;
     
@@ -907,7 +937,7 @@ function show_messages($book_id=0, $usertwo_id=0){
     
     
     if ( mysqli_num_rows($retval) > 0) {
-        echo '<div class="message-header text-light bg-dark">Viewing conversation with <strong>'.$usertwo['username'].'</strong> about <strong>'.$book['title'].'</strong></div><div class="message-body">';
+        echo '<div class="message-header">Viewing conversation with <strong>'.$usertwo['username'].'</strong> about <strong>'.$book['title'].'</strong></div><div class="message-body">';
         while ($row = mysqli_fetch_assoc($retval)){
             
             if ( $row['sent_to'] == $user_id){
@@ -993,10 +1023,10 @@ function manage_books($seller_id='') {
     
     if (mysqli_num_rows($retval) > 0) {
         echo "<table class='table table-sm table-hover'>";
-        echo "<thead class='thead-dark'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+        echo "<thead class='table-header'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<tr><td>".$row['book_id']."</td><td>";
-            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".$row['photo']."' alt=".$row['title']."/></div></td><td>";
+            echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".(empty($row['photo']) ? 'book-icon.png' : $row['photo'])."' alt=".$row['title']."/></div></td><td>";
             echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
             if ($row['isPublished']){
                 echo "<span class='badge badge-success'>Published</span>";
@@ -1019,6 +1049,50 @@ function manage_books($seller_id='') {
         echo "</tbody></table>";
     } else {
         echo "<a href='sell.php'> Sell your book. </a>";
+    }
+    mysqli_close($db);
+}
+
+// SUBMIT FEEDBACK
+function submit_feedback() {
+    global $db, $errors;
+    
+    $name       = e($_POST['name']);
+    $email      = e($_POST['email']);
+    $feedback   = e($_POST['feedback']);
+    
+    if ( count($errors) == 0 ) {
+        $query = "INSERT INTO feedback (name, email, feedback) VALUES ('$name', '$email', '$feedback')";
+        if ( mysqli_query($db, $query) ) {
+            $_SESSION['success']  = '<div class="alert alert-success alert-dismissible"> <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> Feedback submitted! </div>';
+        } else {
+            array_push($errors, "Error updating database. ERROR DETAILS:".mysqli_error($db));
+        }
+    }
+        
+}
+
+// LIST FEEDBACK FOR FEEDBACK MANAGEMENT
+function list_feedback() {
+    global $db, $errors;
+    
+    $query = "SELECT * FROM feedback";
+    $retval = mysqli_query($db, $query); 
+    
+    if (mysqli_num_rows($retval) > 0) {
+        echo "<table class='table table-hover table-sm'>";
+        echo "<thead class='thead-dark'><tr><th>Feedback ID</th><th>Name</th><th>Email</th><th>Feedback</th><th>Date submitted</th><th>Actions</th></tr></thead><tbody>";
+        
+        while($row = mysqli_fetch_assoc($retval)) {
+            echo "<tr><td>".$row['feedback_id']."</td><td>";
+            echo $row['name']."</td><td>";
+            echo $row['email']."</td><td>".$row['feedback']."</td><td>";
+            echo $row['date_submitted']."</td><td>";
+            echo "</td></tr>";
+        }
+        echo "</tbody></table>";
+    } else {
+        echo "<a href='#'> No results. </a>";
     }
     mysqli_close($db);
 }
@@ -1078,14 +1152,16 @@ function list_regions($selected=0) {
 
 // get location
 function get_location($loc_id) {
-    global $db;
+    global $db, $errors;
     
     $query = "SELECT * FROM location WHERE loc_id=".$loc_id;
-    $retval = mysqli_query($db, $query); 
-    $loc = mysqli_fetch_assoc($retval);
-    mysqli_close($db);
-        
-    return $loc['region'];
+    if ($retval = mysqli_query($db, $query)){
+        $loc = mysqli_fetch_assoc($retval);
+        return $loc['region'];
+    } else {
+        array_push($errors, mysqli_error($db));
+    }        
+    
 }
 
 // list category as filters
@@ -1102,3 +1178,63 @@ function list_category_as_filters() {
     }
 //    echo "</div>";
 }
+
+// get site information
+function get_siteinfo() {
+    global $db, $errors;
+    
+    $query = "SELECT * FROM site";
+    if ($retval = mysqli_query($db, $query)){
+        while($row = mysqli_fetch_assoc($retval)){
+            $_SESSION['siteinfo'][$row['meta_key']] = $row['meta_value'];
+        }
+    } else {
+        array_push($errors, mysqli_error($db));
+    }        
+    
+}
+
+function save_config() {
+    global $db, $errors;
+    
+    $theme      = e($_POST['theme']);
+    $site_title = e($_POST['site_title']);
+    $site_name  = e($_POST['site_name']);
+    $admin_email = e($_POST['admin_email']);
+    
+     // get file input for site logo
+    if ( $_FILES['logo']['tmp_name'] != '' ) { 
+        $uploads_dir = "../content/site_logo.png";
+    
+        // check if file is really an image
+        $check = getimagesize($_FILES["logo"]["tmp_name"]);
+        if($check !== false) {
+            //  check if file size of photo is within 1MB
+            if ($_FILES["logo"]["size"] > 1000000) {
+                array_push($errors, "Sorry, your file is too large.");
+            }
+        } else {
+            array_push($errors, "File is not an image.");
+        }
+    }
+    
+    $query = "UPDATE site SET meta_value='$theme' WHERE meta_key='theme'; ";
+    $query .= "UPDATE site SET meta_value='$site_title' WHERE meta_key='site_title'; ";
+    $query .= "UPDATE site SET meta_value='$site_name' WHERE meta_key='site_name'; ";
+    $query .= "UPDATE site SET meta_value='$admin_email' WHERE meta_key='admin_email'; ";
+    if ($retval = mysqli_multi_query($db, $query)){
+        if ( $_FILES['logo']['tmp_name'] != '' ) {
+                if (move_uploaded_file($_FILES['logo']['tmp_name'], $uploads_dir)) {
+                    //no file upload error
+                }else{
+  		            array_push($errors, "Failed to upload");
+                }
+            }
+        $_SESSION['success']  = '<div class="alert alert-success"><strong>Site configuration saved!</strong></div>';
+        exit(header('location:configure.php'));
+    } else {
+        array_push($errors, mysqli_error($db));
+    }        
+    
+}
+

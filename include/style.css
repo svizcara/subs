@@ -1,22 +1,13 @@
-body {
-/*    background-color: lightgray;*/
+/*footer styles*/
+.footer {
+    padding: 1em;
 }
 
-label {
-    font-size: 0.9em;
-    font-weight: bold;
-}
-
-.required-label {
-    font-size: 0.8em;
-    font-weight: lighter;
-    color: red;
-}
-
+/*panel styles*/
 .panel {
-    border-radius:5px;
-    margin: 5em 10% 5em 10%;
-/*    background-color: antiquewhite;*/
+    border-radius: 0px;
+    margin: 3em 5% 3em 5%;
+    display: block;
 }
 
 .panel h1 {
@@ -33,10 +24,63 @@ label {
     border-left: 1px solid #ced4da;
 }
 
-.bg-brown {
-    background-color: #8B4513!important;
+.search-panel {
+    margin: 2em 5% 0 5%;
+    padding: 0;
 }
 
+.filter-sort-panel {
+    margin: 1em 5% 1em 5%;
+    vertical-align: bottom;
+    position: relative;
+    padding: 0;
+}
+
+.filter-panel {}
+
+.sort-panel {
+    position: absolute;
+    bottom: 0;
+    right: 14px;
+    font-weight: lighter;
+}
+
+.label {
+    text-transform: uppercase;
+    font-size: 0.8em;
+}
+
+.filter-button {
+    margin-right: 5px;
+    float: left;
+    border-radius: 0px;
+}
+
+.sort-panel select{
+    width: auto;
+    margin-left: 1em;
+    border-radius: 0px;
+}
+
+.catalog-panel {
+    margin: 1em 5% 0 5%;
+}
+
+
+/*form styles*/
+
+label {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.required-label {
+    font-size: 0.8em;
+    font-weight: lighter;
+    color: red;
+}
+
+/*alert styles*/
 .alert-fixed {
     position: fixed;
     right: 0;
@@ -44,10 +88,13 @@ label {
     z-index: 1031;
 }
 
+/*edit profile styles*/
 .photo-frame {
     border-radius:50px;
     height: 100px;
     width: 100px;
+    font-size: 3em;
+    background-color: #aaaaaa;
 }
 
 .photo-frame img {
@@ -59,16 +106,18 @@ label {
     padding-top: 40px;
 }
 
-
+/* sell book form styles*/
 #photo-preview {
     height: 200px;
     padding: 10px;
     border: 1px solid #fffffe;
 }
 
+/* book catalog styles*/
 .thumbnail {
     position: relative;
-    width: 200px;
+/*    width: 200px;*/
+    width: 100%;
     height: 200px;
     overflow: hidden;
 }
@@ -90,30 +139,31 @@ label {
 }
 
 .catalog-item {
-    margin: 10px 10px 10px 10px;
-    width: 200px;
-    height: 270px;
+    padding: 15px;
+/*    margin: 14px;*/
     position: relative;
-}
-
-.catalog-item a {
-    color: black;
+/*    width: 230px;*/
+    width: 100%;
+    height: 300px;
 }
 
 .catalog-item a:hover {
     text-decoration: none;
 }
 
-
 .catalog-item .book-price {
     display: block;
-    width: 100%;
+/*    width: 200px;*/
+    width: 87%;
     position: absolute;
-    bottom: 0;
+    bottom: 14px;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-align: right;
 }
 
 .catalog-item .book-price hr{
-    margin: 2px;
+    margin: 0px;
 }
 
 .catalog-item .caption {
@@ -129,24 +179,19 @@ label {
     white-space: nowrap;
 }
 
-.catalog-item .caption span.book-title {
+.catalog-item .book-title {
+    height: 25px;
     max-height: 25px;
-}
-.catalog-item .caption span.book-author {
-    max-height: 20px;
+    font-size: 1.2em;
 }
 
-.book-title { font-weight: bold; }
-.book-author { 
+.catalog-item .book-author { 
     font-weight: lighter; 
     font-size: 0.8em;
+    text-transform: uppercase;
+    max-height: 20px;
 }
-.book-price {
-    font-weight: bold;
-    font-size: 0.8em;
-}
-
-
+/*view book item styles*/
 .view-panel {
     padding: 2em;
 }
@@ -155,8 +200,6 @@ label {
     margin-bottom: 1em;
     text-transform: uppercase;
     font-size: 1em;
-    color: darkslategray;
-    font-stretch: extra-expanded;
 }
 
 .view-panel .caption {
@@ -233,51 +276,17 @@ label {
     padding: 2em;
 }
 
+/*search input styles*/
 input[name=search-book] {
     padding: 0.2em;
     float: left;
-/*    width: 70%;*/
     font-size-adjust: auto;
     font-stretch: extra-expaextra-condensed;
     font-weight: lighter;
+    margin: 0;
 }
 
-.search-panel {
-    margin: 2em 5% 0 5%;
-}
-
-.filter-panel, .sort-panel {
-    margin: 1em 5% 0 5%;
-    padding: 0 1em 0 1em;
-}
-
-
-.filter-panel span {
-    float: left;
-    font-weight: lighter;
-    margin-top: 5px;
-}
-
-.filter-button {
-    margin: 0 5px 0 5px;
-    float: left;
-    border-radius: 0px;
-}
-
-.sort-panel span {
-    float: left;
-}
-
-.sort-panel {
-    font-weight: lighter;
-}
-
-.sort-panel select{
-    width: auto;
-    margin-left: 1em;
-    border-radius: 0px;
-}
-
+/*message box styles*/
 .sender-bubble, .receiver-bubble {
     width: 100%;
     clear: both;
@@ -320,7 +329,10 @@ input[name=search-book] {
 .receiver-bubble timestamp {
     display: block;
 }
-
+.messages-list {
+    padding: 0px;
+    border: none;
+}
 .messages-list a span {
     display: block;
 }
@@ -337,15 +349,20 @@ input[name=search-book] {
 .tag {
     float: right;
 }
+
 .message-box {
     padding:0;
-    border-radius: 10px;
+    border: none;
 }
+
+.message-box .form-control,
+.message-box button{
+    border-radius: 0px;
+}
+
 .message-header {
-/*    background-color: black;*/
     padding: 2px 1em 2px 1em;
     margin: 0;
-    border-radius: 9px 9px 0px 0px;
 }
 
 .message-body {
@@ -369,3 +386,31 @@ input[name=search-book] {
     text-align: center;
     margin: auto;
 }
+
+
+/*FOR LARGER SCREENS*/
+@media (min-width: 600px) {
+    .catalog-item {
+        width: 50%;
+    }
+}
+
+@media (min-width: 900px) {
+    .catalog-item {
+        width: 33%;
+    }
+}
+
+@media (min-width: 1024px) {
+    .catalog-item {
+        width: 25%;
+    }
+}
+
+@media (min-width: 1300px) {
+    .catalog-item {
+        width: 20%;
+    }
+}
+
+

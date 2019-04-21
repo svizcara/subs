@@ -8,7 +8,8 @@ if (isset($_GET['id'])) {
 $book = $_SESSION['book'];
 ?>
 
-    <div class="panel form-panel border">
+    <div class="panel form-panel">
+        <div class="wide-panel">
         <h1 class="d-flex justify-content-center">Edit Book</h1>
          <form method="post" enctype="multipart/form-data" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
              <div class="form-group">
@@ -85,5 +86,6 @@ $book = $_SESSION['book'];
              <button type="submit" class="btn btn-primary" name="editsave_btn">Save</button>
              <button type="submit" class="btn btn-primary" name="editpublish_btn">Publish</button>
         </form>
+        </div>
     </div>
 <?php include('footer.php')?>

@@ -1,6 +1,6 @@
 <?php include 'header.php'; ?>
         
-<div class="panel border d-flex flex-row">
+<div class="panel d-flex flex-row">
         <div class="sidenav">
             <ul class="nav flex-column">
                 <li class="nav-item">
@@ -8,9 +8,6 @@
                   </li>
                   <li class="nav-item">
                     <a class="nav-link" href="changepwd.php">Change Password</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="#">Email and SMS</a>
                   </li>
             </ul>
         </div>

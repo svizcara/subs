@@ -6,7 +6,7 @@ setTimeout(function() {
     }, 4500);
 
 //script for changing active links
-$('.nav-link').filter(function(){return        this.href==location.href}).parent().addClass('active').siblings().removeClass('active')
+$('.nav-link').filter(function(){return this.href==location.href}).parent().addClass('active').siblings().removeClass('active')
 
 
 // display preview
@@ -22,6 +22,11 @@ function displayImage(input) {
     }
 }
 
-$('.message-item').click(function(){
-    $(this).addClass('active').siblings().removeClass('active');
-})
+//display mobile
+$('#displayMobile').click(function(){
+    if($('#displayMobile').attr('name')==1) {
+        $('#displayMobile').text($('#displayMobile').val());
+    } else {
+        alert("Sorry, mobile number is kept confidential by seller. Please register and send an online message. Thank you!");
+    }
+});

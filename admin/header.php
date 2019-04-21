@@ -2,8 +2,10 @@
 /**
  *  Displays the header of the SUBs website
  */
+include '../config.php';
 include '../functions.php';
 
+// check if user is logged in, if not redirect user to login page
 if ( !isset($_SESSION['user']) ) {
     $_SESSION['msg'] = '<div class="alert alert-warning">You must log in first</div>';
     exit(header('location: ../login.php'));
@@ -60,14 +62,15 @@ if (isset($_GET['deactivate_book'])) {
         <link rel="stylesheet" href="../include/style.css">
     </head>
     <body>
-        <header class="navbar navbar-light navbar-expand-lg text-dark bg-light sticky-top">
+        <header class="navbar navbar-dark navbar-expand-lg text-light bg-dark sticky-top">
             <a class="navbar-brand" href="../index.php">Sell Used Books</a>
             
             <div class="collapse navbar-collapse" id="navbarMenu">
                 <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="index.php">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="configure.php">Site configuration</a></li>
                     <li class="nav-item"><a class="nav-link" href="manage-users.php">User management </a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Feedback management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="manage-feedback.php">Feedback management</a></li>
                     <li class="nav-item"><a class="nav-link" href="index.php?logout='1'">Logout</a></li>
                 </ul>
             </div>

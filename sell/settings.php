@@ -1,15 +1,12 @@
 <?php include 'header.php'; ?> 
-    <div class="panel border d-flex flex-row">
+    <div class="panel d-flex flex-row">
         <div class="sidenav">
             <ul class="nav flex-column">
-                <li class="nav-item">
+                <li class="nav-item <?php echo ( $page == '/subs/sell/settings.php' ? 'active' : '')?>">
                     <a class="nav-link" href="settings.php">Edit Profile</a>
                   </li>
-                  <li class="nav-item">
+                  <li class="nav-item <?php echo ( $page == '/subs/sell/changepwd.php' ? 'active' : '')?>">
                     <a class="nav-link" href="changepwd.php">Change Password</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="#">Email and SMS</a>
                   </li>
             </ul>
         </div>
@@ -18,10 +15,14 @@
 		<div class="settings-panel flex-grow-1">
                 <h1 class="d-flex justify-content-center">Edit profile</h1>
                 <div class="d-flex flex-column">
-                    <button class="photo-frame align-self-center">
-                        <img alt="Profile Photo" src="../content/uploads/profile-photo.png"/>
+                    <button class="btn photo-frame align-self-center">
+                        <?php  
+                            if (empty($_SESSION['userinfo']['profile_photo'])) {
+                                echo substr($_SESSION['user']['first_name'], 0,1). substr($_SESSION['user']['last_name'], 0,1);        
+                            }?>
+<!--                        <img alt="Profile Photo" src="../content/uploads/profile-photo.png"/>-->
                     </button>
-                    <a href="#" class="align-self-center">Change Profile Photo</a>
+<!--                    <a href="#" class="align-self-center">Change Profile Photo</a>-->
                 </div>
             
             
@@ -47,12 +48,25 @@
             </div>    
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" class="form-control" name="location" placeholder="Enter location" value="<?php echo $_SESSION['userinfo']['location']; ?>" pattern="[A-Za-z0-9 .]+" required>
+                <select class="form-control custom-select" name="location" required>
+                    <?php list_regions($_SESSION['userinfo']['location']); ?>
+                </select> 
             </div>
             
             <div class="form-group">
-                <label for="mobile">Mobile number</label>
-                <input type="tel" class="form-control" name="mobile" pattern="[0-9]{11}" placeholder="09xxxxxxxxx" value="<?php echo $_SESSION['userinfo']['mobile'] ; ?>" required>
+                
+                    <label for="mobile">Mobile number</label>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <input type="tel" class="form-control" name="mobile" pattern="[0-9]{11}" placeholder="09xxxxxxxxx" value="<?php echo $_SESSION['userinfo']['mobile'] ; ?>" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="container">Display mobile to interested buyers
+                            <input type="checkbox" name="displaymobile" value=1 <?php echo ($_SESSION['userinfo']['display_mobile'] ? 'checked' : '') ?>>
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
                     
             <div class="form-group">
@@ -75,7 +89,7 @@
                     
             <div class="form-group">
                 <label for="gender">Gender</label>
-                <select class="form-control" name="gender">
+                <select class="form-control custom-select" name="gender">
                     <option <?php if($_SESSION['userinfo']['gender']=='male') echo "selected";?> value="male">Male</option>
                     <option <?php if($_SESSION['userinfo']['gender']=='female') echo "selected";?> value="female">Female</option>
                     <option <?php if($_SESSION['userinfo']['gender']=='') echo "selected";?> value="">Not Specified</option>

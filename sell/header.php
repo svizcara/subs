@@ -2,6 +2,7 @@
 /**
  *  Displays the header of the SUBs website
  */
+include '../config.php';
 include '../functions.php';
 
 //session_start(); 
@@ -41,9 +42,10 @@ if (isset($_GET['unpub'])) {
         <title>Sell Used Books website</title>
         <link rel="stylesheet" href="../include/css/bootstrap.min.css">
         <link rel="stylesheet" href="../include/style.css">
+        <link rel="stylesheet" href="../themes/default.css">
     </head>
     <body>
-        <header class="navbar navbar-expand-lg navbar-dark bg-dark text-light sticky-top">
+        <header class="navbar navbar-expand-lg navbar-user sticky-top">
             <a class="navbar-brand" href="../index.php">Sell Used Books</a>
             
             <div class="collapse navbar-collapse" id="navbarMenu">
@@ -56,7 +58,7 @@ if (isset($_GET['unpub'])) {
                 </ul>
             </div>
             
-            <div>
+            <div class="welcome-user">
                     Welcome, 
                     <?php  if(isset($_SESSION['user'])) : ?>
                         <strong>
@@ -64,7 +66,7 @@ if (isset($_GET['unpub'])) {
                         </strong>!
 
                         <small>
-                            <i  style="color: #888;">(<?php echo ucfirst($_SESSION['user']['user_type']); ?>)</i> 
+                            <i>(<?php echo ucfirst($_SESSION['user']['user_type']); ?>)</i> 
                             <br>
                         </small>
 
@@ -80,6 +82,10 @@ if (isset($_GET['unpub'])) {
     if(isset($_SESSION['success'])) { 
         echo $_SESSION['success'];
         unset($_SESSION['success']);
+    }
+    if(isset($_SESSION['msg'])) { 
+        echo $_SESSION['msg'];
+        unset($_SESSION['msg']);
     }
 ?>
 <?php echo display_error(); ?>
