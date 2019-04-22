@@ -1,4 +1,10 @@
 <?php session_start();
+// Import PHPMailer classes into the global namespace
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//require '/home/bitnami/vendor/autoload.php';
+require '/Applications/MAMP/htdocs/vendor/autoload.php';
 
 // connect to database
 $db = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
@@ -115,7 +121,7 @@ if ( isset($_POST['savecfg_btn']) ) {
 // REGISTER USER
 function register(){
 	// call these variables with the global keyword to make them available in function
-	global $db, $errors, $username, $firstname, $lastname, $email1, $email2, $password, $email_noreply;
+	global $db, $errors, $username, $firstname, $lastname, $email1, $email2, $password, $admin_email, $admin_pwd, $mail_host, $site_url;
 
 	// receive all input values from the form. Call the e() function
     // defined below to escape form values
@@ -204,19 +210,32 @@ function register(){
 
                 $query = "INSERT INTO userinfo (user_id, mobile, shortbio, gender, profile_photo) VALUES('$user_id','','', '', '')";
                 if($retval = mysqli_query($db, $query)){
-                    $to = $email1;
-                    $subject = 'You have registered to SUBs website';
-                    $message = 'Welcome' . $firstname . ''
-                        . 'You have registered with username:'
-                        . 'Username: ' . $username . ''
-                        . 'You may login using this password: '. $password . '';
-                    $headers = 'From: SUBs team <'.$email_noreply .'>' . "\r\n";
-                    $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
+                    
+                    $mail = new PHPMailer(true);
+                    try {
+                        //Server settings
+                        $mail->isSMTP();                        // Set mailer to use SMTP
+                        $mail->Host       = $mail_host;         // Specify main and backup SMTP servers
+                        $mail->SMTPAuth   = true;               // Enable SMTP authentication
+                        $mail->Username   = $admin_email;       // SMTP username
+                        $mail->Password   = $admin_pwd;         // SMTP password
+                        $mail->SMTPSecure = 'tls';              // Enable TLS encryption, `ssl` also accepted
+                        $mail->Port       = 587;                // TCP port to connect to
 
-                    if( mail($to, $subject, $message, $headers) ) {
+                        //Recipient
+                        $mail->setFrom($admin_email, 'SUBs Website');
+                        $mail->addAddress($email1);
+
+                        // Content
+                        $mail->isHTML(true);                                  // Set email format to HTML
+                        $mail->Subject = 'Thanks for creating your account.';
+                        $mail->Body    = 'Welcome <b>'.$firstname.'</b>!<br/><br/>You have registered to our website with the username: <b>'.$username.'</b><br/>You may login to your account using the temporary password: <b>'.$password.'</b> <br/> Please remember to change your password and update your profile upon login.';
+                        $mail->AltBody = 'Welcome '.$firstname.'! You have registered to our website with the username:'.$username.'. You may login to your account using the temporary password: '.$password.'. Please remember to change your password and update your profile upon login.';
+
+                        $mail->send();
                         $_SESSION['success']  = '<div class="alert alert-success alert-dismissible"> <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a> <strong>Successfully registered! </strong> An initial password has been sent to your email address.</div>';
-                    } else {
-                        array_push($errors,'<div class="alert alert-success alert-dismissible"> Email not sent:'.$password.'</div>');
+                    } catch (Exception $e) {
+                        array_push($errors,'<div class="alert alert-success alert-dismissible"> Email not sent. Please contact site administrator. </div>');
                     }
                     exit(header('location: register.php'));	
                 } else {
@@ -320,7 +339,7 @@ function chpwd(){
 
 // FORGOT PASSWORD
 function reset_password() {
-    global $db, $errors, $email_noreply;
+    global $db, $errors, $admin_email, $admin_pwd, $mail_host, $site_url;
     
     $email = e($_POST['email']);
     
@@ -338,19 +357,37 @@ function reset_password() {
         } else {
             $query = "INSERT INTO password_resets(email, reset_token) VALUES ('$email', '$token')";
         }
-        $retval = mysqli_query($db, $query);
         
-         // Send email to user with the token in a link they can click on
-        $to = $email;
-        $subject = 'Reset your password on Sell Used Books';
-        $message = "Hi there, click on this <a href=new-password.php?token=$token>link</a> to reset your password on our site";
-        $message = wordwrap($message,70);
-        $headers = 'From: SUBs team <'.$email_noreply .'>' . "\r\n";
-        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
-        mail($to, $subject, $message, $headers);
-        //header('location: pending.php?email=' . $email);    
-        
-        $_SESSION['success'] = '<div class="alert alert-success"> Password reset link sent to your email. <br/> Hi there, click on this <a href=new-password.php?token='.$token.'>link</a> to reset your password on our site </div>';
+        if ($retval = mysqli_query($db, $query)) {
+            $mail = new PHPMailer(true);
+            try {
+                //Server settings
+                $mail->isSMTP();                        // Set mailer to use SMTP
+                $mail->Host       = $mail_host;         // Specify main and backup SMTP servers
+                $mail->SMTPAuth   = true;               // Enable SMTP authentication
+                $mail->Username   = $admin_email;       // SMTP username
+                $mail->Password   = $admin_pwd;         // SMTP password
+                $mail->SMTPSecure = 'tls';              // Enable TLS encryption, `ssl` also accepted
+                $mail->Port       = 587;                // TCP port to connect to
+
+                //Recipient
+                $mail->setFrom($admin_email, 'SUBs Website');
+                $mail->addAddress($email);
+
+                // Content
+                $mail->isHTML(true);                                  // Set email format to HTML
+                $mail->Subject = 'Reset your password.';
+                $mail->Body    = 'Hi there, click on this <a href='.$site_url.'new-password.php?token='.$token.'>link</a> to reset your password on our site.<br/>If the link above did not work, please copy-paste the following to your web browser: '.$site_url.'new-password.php?token='.$token;
+                $mail->AltBody = 'Hi there, please visit the following link to reset your password: '.$site_url.'new-password.php?token='.$token;
+
+                $mail->send();
+                $_SESSION['success'] = '<div class="alert alert-success"> Password reset link sent to your email.</div>';
+            } catch (Exception $e) {
+                array_push($errors,'Email not sent. Please contact site administrator.');
+            }
+        } else {
+            array_push($errors, "Sorry, something went wrong. Please contact site administrator.");
+        }
     } else {
         array_push($errors, "Sorry, email is not yet registered.");
     }
@@ -482,7 +519,7 @@ function save_book($isPublished=0){
         $check = getimagesize($_FILES["photo"]["tmp_name"]);
         if($check !== false) {
             //  check if file size of photo is within 1MB
-            if ($_FILES["photo"]["size"] > 1000000) {
+            if ($_FILES["photo"]["size"] > 5000000) {
                 array_push($errors, "Sorry, your file is too large.");
             }
         } else {
@@ -537,12 +574,12 @@ function list_books() {
     $retval = mysqli_query($db, $query); 
     
     if (mysqli_num_rows($retval) > 0) {
-        echo "<table class='table table-sm table-hover'>";
+        echo "<table class='table table-sm table-hover custom-responsive'>";
         echo "<thead class='table-header'><tr><th>Book ID</th><th>Book Photo</th><th>Date Created</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
         while($row = mysqli_fetch_assoc($retval)) {
             echo "<tr><td>".$row['book_id']."</td><td>";
             echo "<div class='thumbnail thumbnail-sm'><img src='../content/uploads/".(empty($row['photo']) ? 'book-icon.png' : $row['photo'])."' alt=".$row['title']."/></div></td><td>";
-            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".$row['category']."</td><td>";
+            echo $row['date_created']."</td><td>".$row['title']."</td><td>".$row['author']."</td><td>".get_category($row['category'])."</td><td>";
             if ($row['isPublished']){
                 echo "<span class='badge badge-success'>Published</span>";
             } else {
@@ -728,14 +765,14 @@ function display_book($book_id) {
     echo "<span class='view-seller-location caption'>".get_location($seller['location'])."</span>";
     echo "<h2>Contact Seller</h2>";
     echo "<div class='d-flex flex-column border' id='contact-seller-container'>";
-    echo "<button class='btn btn-primary btn-sm' data-toggle='modal' data-target='#sendMessage'>Send online message</button>"; 
+    echo "<button class='btn btn-primary btn-sm' data-toggle='modal' data-target='#sendMessage' id='sendmsgModal'>Send online message</button>"; 
     echo "<span align='center'>OR</span>";
     echo "<button class='btn btn-light btn-sm' id='displayMobile' name=".$seller['display_mobile']." value='".$seller['mobile']."'>09XX-XXX-XXXX</button>";
     echo "</div></div>";
     
     echo '
-        <div class="modal fade" id="sendMessage" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered" role="document">';
+        <div class="modal fade" id="sendMessage" tabindex="-2" role="dialog" aria-labelledby="sendMessage" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="dialog">';
     if ( !isset($_SESSION['user']) ){
         echo '<div class="modal-content">
               <div class="modal-header">
@@ -914,7 +951,7 @@ function list_messages(){
         echo '</div></div>';
     } else {
         echo "<div class='filler'>No messages to show.";
-        echo "<br/><a href=''>Start selling</a> OR <a href=''>Find books to buy.</a></div>";
+        echo "<br/><a href='sell.php'>Start selling</a> OR <a href='../index.php'>Find books to buy.</a></div>";
     }
 }
 
@@ -1163,6 +1200,21 @@ function get_location($loc_id) {
     }        
     
 }
+
+// get category
+function get_category($cat_id) {
+    global $db, $errors;
+    
+    $query = "SELECT * FROM book_category WHERE cat_id=".$cat_id;
+    if ($retval = mysqli_query($db, $query)){
+        $cat = mysqli_fetch_assoc($retval);
+        return $cat['category'];
+    } else {
+        array_push($errors, mysqli_error($db));
+    }        
+    
+}
+
 
 // list category as filters
 function list_category_as_filters() {

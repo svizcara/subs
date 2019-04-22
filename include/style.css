@@ -6,17 +6,17 @@
 /*panel styles*/
 .panel {
     border-radius: 0px;
-    margin: 3em 5% 3em 5%;
     display: block;
+    padding-bottom: 3em;
 }
+
+.form-panel {
+    padding: 20px 20px 3em 20px;
+} 
 
 .panel h1 {
     font-size: 2em;
     margin-bottom: 1em;
-}
-
-.form-panel {
-    padding:40px;
 }
 
 .settings-panel {
@@ -32,17 +32,32 @@
 .filter-sort-panel {
     margin: 1em 5% 1em 5%;
     vertical-align: bottom;
-    position: relative;
     padding: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
 }
 
-.filter-panel {}
+.filter-panel {
+    float:left;
+    width: 100%;
+}
 
 .sort-panel {
-    position: absolute;
-    bottom: 0;
-    right: 14px;
+    float: right;
+    width: 100%;
+    position: relative;
+}
+
+.sort-panel form {
+    float: right;
     font-weight: lighter;
+    width: 100%;
+}
+
+.sort-panel form select {
+    float: right;
+    width: 75%;
 }
 
 .label {
@@ -52,6 +67,7 @@
 
 .filter-button {
     margin-right: 5px;
+    width: 100%;
     float: left;
     border-radius: 0px;
 }
@@ -387,6 +403,30 @@ input[name=search-book] {
     margin: auto;
 }
 
+.custom-responsive thead{
+    display: none;
+}
+
+.custom-responsive tr {
+    display: table;
+    width:100%;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    margin-bottom: 1em;
+}
+
+.custom-responsive td {
+    display: table-row; 
+    align-content: center;
+    line-height: 1.8em;
+    border: none;
+}
+
+.custom-responsive td .thumbnail-sm{
+    display: block;
+    margin: auto;
+}
+
 
 /*FOR LARGER SCREENS*/
 @media (min-width: 600px) {
@@ -399,18 +439,59 @@ input[name=search-book] {
     .catalog-item {
         width: 33%;
     }
+    
+    .filter-button,
+    .sort-panel form,
+    .sort-panel form select {
+        width: auto;
+    }
+    
+    .custom-responsive thead {
+        display: table-header-group;
+    }
+    
+    .custom-responsive tr {
+        display: table-row;
+        text-align: left;
+    }
+    .custom-responsive td {
+        display: table-cell;   
+    }
+    
 }
 
 @media (min-width: 1024px) {
     .catalog-item {
         width: 25%;
     }
+    
+    .panel {
+        margin: 3em 5% 3em 5%;
+    }
+    
+    .filter-sort-panel {
+        flex-direction: row;
+    }
+    
+    .filter-panel {
+        width: 75%;
+    }
+    
+    .sort-panel {
+        width: 25%;
+    }
+    
 }
 
 @media (min-width: 1300px) {
     .catalog-item {
         width: 20%;
     }
+    
 }
 
-
+button,
+#sendmsgModal,
+#displayMobile {
+    z-index: 99;
+}

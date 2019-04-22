@@ -15,7 +15,7 @@
                     </div>
                 </form>
             </div>
-            <div class="filter-sort-panel clearfix">
+            <div class="filter-sort-panel">
                 <div class="filter-panel">
 <!--                    <span class="label">Filter by category: </span>-->
 

@@ -152,7 +152,7 @@ header, body {
 }
 
 .filter-panel{
-    width: 100%;
+/*    width: 100%;*/
     padding 0px;
     margin: 0px;
     display: block;
@@ -340,4 +340,9 @@ table {
   -webkit-transform: rotate(45deg);
   -ms-transform: rotate(45deg);
   transform: rotate(45deg);
+}
+
+.custom-responsive tr {
+    border-top: 1px solid rgba(225, 197, 132, 0.5);
+    border-bottom: 1px solid rgba(225, 197, 132, 0.5);
 }
